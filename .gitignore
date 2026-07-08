@@ -1,0 +1,10 @@
+# Secretos — NUNCA subir al repositorio
+.env
+
+# Archivos de build Java
+backend/main/target/
+
+# IDE
+.idea/
+*.iml
+.vscode/

@@ -25,7 +25,7 @@ const Login = () => {
     <div className="login-container">
       <div className="login-card">
         <h1 className="login-title">FitManage Pro</h1>
-        <p className="login-subtitle">Ingresa tus credenciales</p>
+        <p className="login-subtitle">Ingresa tus datos de acceso</p>
         
         {error && <div style={{ color: '#ef4444', marginBottom: '1rem' }}>{error}</div>}
 

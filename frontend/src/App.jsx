@@ -3,7 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/Login/Login';
 import DashboardAdmin from './components/Admin/DashboardAdmin';
 
-// Placeholder components for routing (we'll implement them in 3.B and 3.C)
+// dashboard del cliente
 const ClientDashboardPlaceholder = () => (
   <div style={{ padding: '2rem', textAlign: 'center' }}>
     <h2>Mi Plan (Próximamente)</h2>
@@ -11,16 +11,16 @@ const ClientDashboardPlaceholder = () => (
   </div>
 );
 
-// Main Router based on Role
+// route principal
 const MainRouter = () => {
   const { user, logout } = useAuth();
 
-  // If no user is logged in, show Login
+  // si no esta logeado se muesta el login
   if (!user) {
     return <Login />;
   }
 
-  // Basic Header for Navigation/Logout
+  // el header si esta logeado
   return (
     <>
       <header style={{ 

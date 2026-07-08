@@ -5,7 +5,7 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
 
-  // Helper to decode JWT payload
+  // parse de jwt para obtener el payload
   const parseJwt = (token) => {
     try {
       const base64Url = token.split('.')[1];
