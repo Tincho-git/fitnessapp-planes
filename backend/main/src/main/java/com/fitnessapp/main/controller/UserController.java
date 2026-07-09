@@ -19,8 +19,16 @@ public class UserController {
     }
 
     @GetMapping("/clients")
-    public List<User> getAllClients() {
-        return userService.getAllClients();
+    public List<User> getClients(org.springframework.security.core.Authentication authentication) {
+        String professorEmail = authentication.getName();
+        return userService.getClientsByProfessorEmail(professorEmail);
+    }
+
+    @PutMapping("/clients/profesor")
+    public ResponseEntity<?> changeProfessor(@RequestBody com.fitnessapp.main.dto.ChangeProfessorRequest request, org.springframework.security.core.Authentication authentication) {
+        String clientEmail = authentication.getName();
+        userService.changeProfessor(clientEmail, request.getProfesorEmail());
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/{id}/plans")

@@ -18,8 +18,24 @@ public class UserService {
         this.trainingPlanRepository = trainingPlanRepository;
     }
 
-    public List<User> getAllClients() {
-        return userRepository.findByRole("CLIENT");
+    public List<User> getClientsByProfessorEmail(String professorEmail) {
+        User profesor = userRepository.findByEmail(professorEmail)
+                .orElseThrow(() -> new RuntimeException("Profesor no encontrado"));
+        return userRepository.findByProfesorId(profesor.getId());
+    }
+
+    public void changeProfessor(String clientEmail, String newProfessorEmail) {
+        User client = userRepository.findByEmail(clientEmail)
+                .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+        User newProfesor = userRepository.findByEmail(newProfessorEmail)
+                .orElseThrow(() -> new RuntimeException("Nuevo Profesor no encontrado"));
+        
+        if (!"ADMIN".equals(newProfesor.getRole())) {
+            throw new RuntimeException("El correo proporcionado no pertenece a un profesor");
+        }
+        
+        client.setProfesor(newProfesor);
+        userRepository.save(client);
     }
 
     public List<TrainingPlan> getClientPlans(Long clientId) {

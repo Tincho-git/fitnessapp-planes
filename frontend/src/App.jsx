@@ -1,23 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/Login/Login';
+import Register from './components/Register/Register';
 import DashboardAdmin from './components/Admin/DashboardAdmin';
-
-// dashboard del cliente
-const ClientDashboardPlaceholder = () => (
-  <div style={{ padding: '2rem', textAlign: 'center' }}>
-    <h2>Mi Plan (Próximamente)</h2>
-    <p>Aquí irá la visualización de la rutina agrupada por músculos.</p>
-  </div>
-);
+import ClientDashboard from './components/Client/ClientDashboard';
 
 // route principal
 const MainRouter = () => {
   const { user, logout } = useAuth();
+  const [authView, setAuthView] = useState('login');
 
-  // si no esta logeado se muesta el login
+  // si no esta logeado se muesta el login o registro
   if (!user) {
-    return <Login />;
+    if (authView === 'login') {
+      return <Login onSwitchToRegister={() => setAuthView('register')} />;
+    } else {
+      return <Register onSwitchToLogin={() => setAuthView('login')} />;
+    }
   }
 
   // el header si esta logeado
@@ -51,7 +50,7 @@ const MainRouter = () => {
       </header>
       
       <main>
-        {user.role === 'ADMIN' ? <DashboardAdmin /> : <ClientDashboardPlaceholder />}
+        {user.role === 'ADMIN' ? <DashboardAdmin /> : <ClientDashboard />}
       </main>
     </>
   );

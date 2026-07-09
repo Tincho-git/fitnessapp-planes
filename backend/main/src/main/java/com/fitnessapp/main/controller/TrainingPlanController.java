@@ -41,4 +41,12 @@ public class TrainingPlanController {
         trainingPlanService.deleteTrainingPlan(id);
         return ResponseEntity.noContent().build();
     }
+
+    // Endpoint para el cliente: ver su propio plan
+    @GetMapping("/my-plan")
+    public ResponseEntity<List<TrainingPlan>> getMyPlan(org.springframework.security.core.Authentication authentication) {
+        String email = authentication.getName();
+        List<TrainingPlan> plans = trainingPlanService.getMyPlanByEmail(email);
+        return ResponseEntity.ok(plans);
+    }
 }

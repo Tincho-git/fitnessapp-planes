@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import './Login.css';
 
-const Login = () => {
+const Login = ({ onSwitchToRegister }) => {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -67,6 +67,12 @@ const Login = () => {
             {loading ? 'Ingresando...' : 'Iniciar Sesión'}
           </button>
         </form>
+
+        <div style={{ marginTop: '1.5rem' }}>
+          <button onClick={onSwitchToRegister} style={{ background: 'none', border: 'none', color: '#818cf8', cursor: 'pointer', textDecoration: 'underline' }}>
+            ¿No tienes cuenta? Regístrate
+          </button>
+        </div>
       </div>
     </div>
   );
