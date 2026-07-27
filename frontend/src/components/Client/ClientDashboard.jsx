@@ -127,119 +127,130 @@ const ClientDashboard = () => {
   };
 
   return (
-    <div className="client-dashboard">
-      <div className="client-header">
-        <h2 className="client-title">Mi Panel de Entrenamiento</h2>
-      </div>
+    <div className="client-dashboard-layout">
+      {/* Sidebar a la izquierda (igual a Admin) */}
+      <aside className="client-sidebar">
+        <h2 className="sidebar-title">Mi Espacio</h2>
+        <nav className="sidebar-nav">
+          <button
+            className={`nav-btn ${activeTab === 'plan' ? 'active' : ''}`}
+            onClick={() => setActiveTab('plan')}
+          >
+            📋 Mi Plan
+          </button>
+          <button
+            className={`nav-btn ${activeTab === 'metrics' ? 'active' : ''}`}
+            onClick={() => setActiveTab('metrics')}
+          >
+            📈 Métricas
+          </button>
+          <button
+            className={`nav-btn ${activeTab === 'settings' ? 'active' : ''}`}
+            onClick={() => setActiveTab('settings')}
+          >
+            ⚙️ Configuración
+          </button>
+        </nav>
+      </aside>
 
-      {/* Tabs */}
-      <div className="client-tabs">
-        <button
-          className={`tab-btn ${activeTab === 'plan' ? 'active' : ''}`}
-          onClick={() => setActiveTab('plan')}
-        >
-          📋 Mi Plan
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'metrics' ? 'active' : ''}`}
-          onClick={() => setActiveTab('metrics')}
-        >
-          📈 Métricas
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
-          onClick={() => setActiveTab('settings')}
-        >
-          ⚙️ Configuración
-        </button>
-      </div>
+      {/* Contenido Principal */}
+      <main className="client-content">
+        {/* TAB: Mi Plan */}
+        {activeTab === 'plan' && (
+          <div>
+            <h2 className="client-title">Mi Plan de Entrenamiento</h2>
+            {loading ? (
+              <p style={{ color: '#94a3b8' }}>Cargando tu plan...</p>
+            ) : plans.length === 0 ? (
+              <div style={{ background: 'rgba(255,255,255,0.05)', padding: '3rem', borderRadius: '16px' }}>
+                <p style={{ color: '#cbd5e1', fontSize: '1.2rem', margin: 0 }}>
+                  Aún no tienes un plan asignado. Contacta a tu profesor.
+                </p>
+              </div>
+            ) : (
+              <div className="exercises-grid">
+                {plans.map(planItem => {
+                  const ex = planItem.exercise;
+                  const loggedToday = isLoggedToday(ex.id);
 
-      {/* TAB: Mi Plan */}
-      {activeTab === 'plan' && (
-        <div>
-          {loading ? (
-            <p style={{ textAlign: 'center', color: '#94a3b8' }}>Cargando tu plan...</p>
-          ) : plans.length === 0 ? (
-            <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.05)', padding: '3rem', borderRadius: '16px' }}>
-              <p style={{ color: '#cbd5e1', fontSize: '1.2rem', margin: 0 }}>
-                Aún no tienes un plan asignado. Contacta a tu profesor.
+                  return (
+                    <div
+                      key={planItem.id}
+                      className="exercise-card-client"
+                      onClick={() => openProgressModal(planItem)}
+                    >
+                      <div>
+                        <div className="card-header-row">
+                          <h3 className="exercise-name-title">{ex.nombre}</h3>
+                          {loggedToday && (
+                            <span className="logged-badge">
+                              ✅ Hoy
+                            </span>
+                          )}
+                        </div>
+                        <div className="exercise-muscle-tag">🎯 {ex.musculo}</div>
+                        <div className="exercise-stats-row">
+                          <span><strong>Sets:</strong> {planItem.sets}</span>
+                          <span><strong>Reps:</strong> {planItem.reps}</span>
+                          {planItem.pesoSugerido && (
+                            <span><strong>Sugerido:</strong> {planItem.pesoSugerido} kg</span>
+                          )}
+                        </div>
+                        {planItem.notasExtras && (
+                          <p style={{ fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic', margin: '0 0 0.5rem 0' }}>
+                            "{planItem.notasExtras}"
+                          </p>
+                        )}
+                      </div>
+                      <div className="card-action-text">
+                        ➕ Hacer click para registrar progreso
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB: Métricas */}
+        {activeTab === 'metrics' && (
+          <div>
+            <h2 className="client-title">Métricas de Progreso</h2>
+            <ClientMetrics plans={plans} />
+          </div>
+        )}
+
+        {/* TAB: Configuración */}
+        {activeTab === 'settings' && (
+          <div>
+            <h2 className="client-title">Configuración de la Cuenta</h2>
+            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '2rem', borderRadius: '16px', maxWidth: '600px' }}>
+              <h3 style={{ marginBottom: '1rem', color: '#818cf8' }}>Profesor Asignado</h3>
+              <p style={{ color: '#cbd5e1', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
+                ¿Quieres cambiar de profesor? Ingresa su email a continuación:
               </p>
+
+              {profError && <div style={{ color: '#ef4444', marginBottom: '1rem', fontSize: '0.9rem' }}>{profError}</div>}
+              {profSuccess && <div style={{ color: '#10b981', marginBottom: '1rem', fontSize: '0.9rem' }}>{profSuccess}</div>}
+
+              <form onSubmit={handleChangeProfessor} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <input
+                  type="email"
+                  placeholder="Email del nuevo profesor..."
+                  value={newProfessorEmail}
+                  onChange={(e) => setNewProfessorEmail(e.target.value)}
+                  required
+                  style={{ padding: '0.75rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.3)', color: 'white' }}
+                />
+                <button type="submit" className="btn-submit-progress" style={{ width: 'auto', alignSelf: 'flex-start', padding: '0.75rem 2rem' }}>
+                  Guardar Cambios
+                </button>
+              </form>
             </div>
-          ) : (
-            <div className="exercises-grid">
-              {plans.map(planItem => {
-                const ex = planItem.exercise;
-                const loggedToday = isLoggedToday(ex.id);
-
-                return (
-                  <div
-                    key={planItem.id}
-                    className="exercise-card-client"
-                    onClick={() => openProgressModal(planItem)}
-                  >
-                    <div>
-                      <div className="card-header-row">
-                        <h3 className="exercise-name-title">{ex.nombre}</h3>
-                        {loggedToday && (
-                          <span className="logged-badge">
-                            ✅ Hoy
-                          </span>
-                        )}
-                      </div>
-                      <div className="exercise-muscle-tag">🎯 {ex.musculo}</div>
-                      <div className="exercise-stats-row">
-                        <span><strong>Sets:</strong> {planItem.sets}</span>
-                        <span><strong>Reps:</strong> {planItem.reps}</span>
-                        {planItem.pesoSugerido && (
-                          <span><strong>Sugerido:</strong> {planItem.pesoSugerido} kg</span>
-                        )}
-                      </div>
-                      {planItem.notasExtras && (
-                        <p style={{ fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic', margin: '0 0 0.5rem 0' }}>
-                          "{planItem.notasExtras}"
-                        </p>
-                      )}
-                    </div>
-                    <div className="card-action-text">
-                      ➕ Hacer click para registrar progreso
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* TAB: Métricas */}
-      {activeTab === 'metrics' && <ClientMetrics plans={plans} />}
-
-      {/* TAB: Configuración */}
-      {activeTab === 'settings' && (
-        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '2rem', borderRadius: '16px', maxWidth: '600px', margin: '0 auto' }}>
-          <h3 style={{ marginBottom: '1rem', color: '#818cf8' }}>Profesor Asignado</h3>
-          <p style={{ color: '#cbd5e1', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
-            ¿Quieres cambiar de profesor? Ingresa su email a continuación:
-          </p>
-
-          {profError && <div style={{ color: '#ef4444', marginBottom: '1rem', fontSize: '0.9rem' }}>{profError}</div>}
-          {profSuccess && <div style={{ color: '#10b981', marginBottom: '1rem', fontSize: '0.9rem' }}>{profSuccess}</div>}
-
-          <form onSubmit={handleChangeProfessor} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <input
-              type="email"
-              placeholder="Email del nuevo profesor..."
-              value={newProfessorEmail}
-              onChange={(e) => setNewProfessorEmail(e.target.value)}
-              required
-              style={{ padding: '0.75rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.3)', color: 'white' }}
-            />
-            <button type="submit" className="btn-submit-progress" style={{ width: 'auto', alignSelf: 'flex-start', padding: '0.75rem 2rem' }}>
-              Guardar Cambios
-            </button>
-          </form>
-        </div>
-      )}
+          </div>
+        )}
+      </main>
 
       {/* Modal para Registro de Progreso */}
       {selectedExercise && (

@@ -25,7 +25,11 @@ export const AuthProvider = ({ children }) => {
     if (token) {
       const decoded = parseJwt(token);
       if (decoded && decoded.exp * 1000 > Date.now()) {
-        setUser({ email: decoded.sub, role: decoded.role || 'CLIENT' });
+        setUser({
+          email: decoded.sub,
+          role: decoded.role || 'CLIENT',
+          nombre: decoded.nombre || decoded.sub
+        });
       } else {
         sessionStorage.removeItem('jwtToken');
       }
@@ -48,7 +52,11 @@ export const AuthProvider = ({ children }) => {
       sessionStorage.setItem('jwtToken', token);
       const decoded = parseJwt(token);
 
-      setUser({ email: decoded.sub, role: decoded.role || 'CLIENT' });
+      setUser({
+        email: decoded.sub,
+        role: decoded.role || 'CLIENT',
+        nombre: decoded.nombre || decoded.sub
+      });
       return true;
     } catch (error) {
       console.error(error);

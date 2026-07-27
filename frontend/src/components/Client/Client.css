@@ -1,58 +1,67 @@
-.client-dashboard {
-  padding: 2rem;
-  max-width: 1000px;
-  margin: 0 auto;
-}
-
-.client-header {
-  margin-bottom: 2rem;
-  text-align: center;
-}
-
-.client-title {
-  font-size: 2.2rem;
-  font-weight: 700;
-  background: linear-gradient(to right, #818cf8, #c084fc);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-bottom: 0.5rem;
-}
-
-.client-tabs {
+.client-dashboard-layout {
   display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 1rem;
+  min-height: calc(100vh - 70px); /* 70px header offset */
 }
 
-.tab-btn {
+.client-sidebar {
+  width: 250px;
+  background: rgba(255, 255, 255, 0.03);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-title {
+  font-size: 1.2rem;
+  color: #818cf8;
+  margin-bottom: 2rem;
+  padding-left: 0.5rem;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.nav-btn {
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: none;
   color: #cbd5e1;
-  padding: 0.75rem 1.5rem;
-  border-radius: 12px;
+  text-align: left;
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 1rem;
-  font-weight: 600;
   transition: all 0.2s;
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.tab-btn:hover {
+.nav-btn:hover {
   background: rgba(255, 255, 255, 0.05);
   color: white;
-  border-color: rgba(255, 255, 255, 0.3);
 }
 
-.tab-btn.active {
-  background: #4f46e5;
-  color: white;
-  border-color: #6366f1;
-  box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.39);
+.nav-btn.active {
+  background: rgba(79, 70, 229, 0.2);
+  color: #a5b4fc;
+  border-left: 3px solid #6366f1;
+}
+
+.client-content {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.client-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #f8fafc;
+  margin-bottom: 1.5rem;
 }
 
 .exercises-grid {
@@ -225,4 +234,15 @@
 
 .btn-submit-progress:hover {
   opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+  .client-dashboard-layout {
+    flex-direction: column;
+  }
+  .client-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
 }

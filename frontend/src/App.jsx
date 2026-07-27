@@ -32,7 +32,7 @@ const MainRouter = () => {
       }}>
         <div style={{ fontWeight: '700', fontSize: '1.2rem', color: '#818cf8' }}>FitManage</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <span>Hola, {user.email || user.name}</span>
+          <span>Hola, {user.nombre || user.email}</span>
           <button 
             onClick={logout}
             style={{
