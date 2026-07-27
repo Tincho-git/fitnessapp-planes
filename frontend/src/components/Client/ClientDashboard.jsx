@@ -1,25 +1,105 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../../utils/api';
+import ClientMetrics from './ClientMetrics';
+import './Client.css';
 
 const ClientDashboard = () => {
+  const [activeTab, setActiveTab] = useState('plan'); // 'plan', 'metrics', 'settings'
   const [plans, setPlans] = useState([]);
+  const [todayProgress, setTodayProgress] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Settings tab state
   const [newProfessorEmail, setNewProfessorEmail] = useState('');
   const [profError, setProfError] = useState('');
   const [profSuccess, setProfSuccess] = useState('');
 
+  // Modal State for Progress Registration
+  const [selectedExercise, setSelectedExercise] = useState(null);
+  const [pesoUsado, setPesoUsado] = useState('');
+  const [repsRealizadas, setRepsRealizadas] = useState('');
+  const [setsRealizados, setSetsRealizados] = useState('');
+  const [notas, setNotas] = useState('');
+  const [submittingProgress, setSubmittingProgress] = useState(false);
+  const [progressSuccessMsg, setProgressSuccessMsg] = useState('');
+
   useEffect(() => {
-    fetchPlans();
+    fetchPlansAndProgress();
   }, []);
 
-  const fetchPlans = async () => {
+  const fetchPlansAndProgress = async () => {
+    setLoading(true);
     try {
-      const response = await apiFetch('/api/my-plan');
-      if (response.ok) {
-        const data = await response.json();
-        setPlans(data);
+      // 1. Fetch training plan
+      const planRes = await apiFetch('/api/my-plan');
+      if (planRes.ok) {
+        const planData = await planRes.json();
+        setPlans(planData);
+      }
+
+      // 2. Fetch client's progress history to check today's entries
+      const progressRes = await apiFetch('/api/progress/mine');
+      if (progressRes.ok) {
+        const progressData = await progressRes.json();
+        setTodayProgress(progressData);
       }
     } catch (error) {
-      console.error("Error cargando el plan:", error);
+      console.error("Error al cargar datos del cliente:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isLoggedToday = (exerciseId) => {
+    if (!todayProgress || !Array.isArray(todayProgress)) return false;
+    const todayStr = new Date().toISOString().split('T')[0];
+    return todayProgress.some(p => {
+      if (p.exercise && p.exercise.id === exerciseId && p.fecha) {
+        const pDateStr = new Date(p.fecha).toISOString().split('T')[0];
+        return pDateStr === todayStr;
+      }
+      return false;
+    });
+  };
+
+  const openProgressModal = (planItem) => {
+    const exercise = planItem.exercise;
+    setSelectedExercise(exercise);
+    setPesoUsado(planItem.pesoSugerido ? planItem.pesoSugerido.toString() : '');
+    setRepsRealizadas(planItem.reps ? planItem.reps.toString() : '');
+    setSetsRealizados(planItem.sets ? planItem.sets.toString() : '');
+    setNotas('');
+    setProgressSuccessMsg('');
+  };
+
+  const handleProgressSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedExercise) return;
+
+    setSubmittingProgress(true);
+    try {
+      const response = await apiFetch('/api/progress', {
+        method: 'POST',
+        body: JSON.stringify({
+          exerciseId: selectedExercise.id,
+          pesoUsado: parseFloat(pesoUsado) || 0,
+          repsRealizadas: parseInt(repsRealizadas) || 0,
+          setsRealizados: parseInt(setsRealizados) || 0,
+          notas
+        })
+      });
+
+      if (!response.ok) throw new Error('Error al registrar progreso');
+
+      setProgressSuccessMsg('¡Progreso registrado con éxito! 🎉');
+      setTimeout(() => {
+        setSelectedExercise(null);
+        fetchPlansAndProgress();
+      }, 1200);
+    } catch (err) {
+      alert("Error al guardar progreso: " + err.message);
+    } finally {
+      setSubmittingProgress(false);
     }
   };
 
@@ -39,7 +119,7 @@ const ClientDashboard = () => {
       } else {
         setProfSuccess('Profesor actualizado exitosamente.');
         setNewProfessorEmail('');
-        fetchPlans(); // Recargar planes (quizás el nuevo profesor borró los viejos, o para actualizar estado)
+        fetchPlansAndProgress();
       }
     } catch (err) {
       setProfError('Error de red al intentar cambiar de profesor.');
@@ -47,49 +127,197 @@ const ClientDashboard = () => {
   };
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
-      <h2 style={{ fontSize: '2rem', marginBottom: '1.5rem', color: '#f8fafc' }}>Mi Plan de Entrenamiento</h2>
-      
-      <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1.5rem', borderRadius: '12px', marginBottom: '2rem' }}>
-        <h3 style={{ marginBottom: '1rem', color: '#818cf8' }}>Configuración</h3>
-        <p style={{ color: '#cbd5e1', marginBottom: '1rem', fontSize: '0.9rem' }}>¿Quieres cambiar de profesor? Ingresa su email aquí:</p>
-        
-        {profError && <div style={{ color: '#ef4444', marginBottom: '1rem', fontSize: '0.9rem' }}>{profError}</div>}
-        {profSuccess && <div style={{ color: '#10b981', marginBottom: '1rem', fontSize: '0.9rem' }}>{profSuccess}</div>}
-
-        <form onSubmit={handleChangeProfessor} style={{ display: 'flex', gap: '1rem' }}>
-          <input 
-            type="email" 
-            placeholder="Email del nuevo profesor..." 
-            value={newProfessorEmail}
-            onChange={(e) => setNewProfessorEmail(e.target.value)}
-            required
-            style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
-          />
-          <button type="submit" className="btn btn-admin" style={{ padding: '0.75rem 1.5rem' }}>Cambiar</button>
-        </form>
+    <div className="client-dashboard">
+      <div className="client-header">
+        <h2 className="client-title">Mi Panel de Entrenamiento</h2>
       </div>
 
-      <div>
-        <h3 style={{ marginBottom: '1rem', color: '#f8fafc' }}>Ejercicios Asignados</h3>
-        {plans.length === 0 ? (
-          <p style={{ color: '#94a3b8' }}>No tienes ejercicios asignados por tu profesor actual.</p>
-        ) : (
-          <div style={{ display: 'grid', gap: '1rem' }}>
-            {plans.map(plan => (
-              <div key={plan.id} style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <h4 style={{ color: '#818cf8', margin: '0 0 0.5rem 0' }}>{plan.exercise.nombre} <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>({plan.exercise.musculo})</span></h4>
-                <div style={{ display: 'flex', gap: '2rem', color: '#e2e8f0', fontSize: '0.9rem' }}>
-                  <span><strong>Sets:</strong> {plan.sets}</span>
-                  <span><strong>Reps:</strong> {plan.reps}</span>
-                  <span><strong>Peso:</strong> {plan.pesoSugerido} kg</span>
-                </div>
-                {plan.notasExtras && <p style={{ marginTop: '0.5rem', color: '#94a3b8', fontSize: '0.9rem', fontStyle: 'italic' }}>"{plan.notasExtras}"</p>}
+      {/* Tabs */}
+      <div className="client-tabs">
+        <button
+          className={`tab-btn ${activeTab === 'plan' ? 'active' : ''}`}
+          onClick={() => setActiveTab('plan')}
+        >
+          📋 Mi Plan
+        </button>
+        <button
+          className={`tab-btn ${activeTab === 'metrics' ? 'active' : ''}`}
+          onClick={() => setActiveTab('metrics')}
+        >
+          📈 Métricas
+        </button>
+        <button
+          className={`tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
+          onClick={() => setActiveTab('settings')}
+        >
+          ⚙️ Configuración
+        </button>
+      </div>
+
+      {/* TAB: Mi Plan */}
+      {activeTab === 'plan' && (
+        <div>
+          {loading ? (
+            <p style={{ textAlign: 'center', color: '#94a3b8' }}>Cargando tu plan...</p>
+          ) : plans.length === 0 ? (
+            <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.05)', padding: '3rem', borderRadius: '16px' }}>
+              <p style={{ color: '#cbd5e1', fontSize: '1.2rem', margin: 0 }}>
+                Aún no tienes un plan asignado. Contacta a tu profesor.
+              </p>
+            </div>
+          ) : (
+            <div className="exercises-grid">
+              {plans.map(planItem => {
+                const ex = planItem.exercise;
+                const loggedToday = isLoggedToday(ex.id);
+
+                return (
+                  <div
+                    key={planItem.id}
+                    className="exercise-card-client"
+                    onClick={() => openProgressModal(planItem)}
+                  >
+                    <div>
+                      <div className="card-header-row">
+                        <h3 className="exercise-name-title">{ex.nombre}</h3>
+                        {loggedToday && (
+                          <span className="logged-badge">
+                            ✅ Hoy
+                          </span>
+                        )}
+                      </div>
+                      <div className="exercise-muscle-tag">🎯 {ex.musculo}</div>
+                      <div className="exercise-stats-row">
+                        <span><strong>Sets:</strong> {planItem.sets}</span>
+                        <span><strong>Reps:</strong> {planItem.reps}</span>
+                        {planItem.pesoSugerido && (
+                          <span><strong>Sugerido:</strong> {planItem.pesoSugerido} kg</span>
+                        )}
+                      </div>
+                      {planItem.notasExtras && (
+                        <p style={{ fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic', margin: '0 0 0.5rem 0' }}>
+                          "{planItem.notasExtras}"
+                        </p>
+                      )}
+                    </div>
+                    <div className="card-action-text">
+                      ➕ Hacer click para registrar progreso
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB: Métricas */}
+      {activeTab === 'metrics' && <ClientMetrics plans={plans} />}
+
+      {/* TAB: Configuración */}
+      {activeTab === 'settings' && (
+        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '2rem', borderRadius: '16px', maxWidth: '600px', margin: '0 auto' }}>
+          <h3 style={{ marginBottom: '1rem', color: '#818cf8' }}>Profesor Asignado</h3>
+          <p style={{ color: '#cbd5e1', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
+            ¿Quieres cambiar de profesor? Ingresa su email a continuación:
+          </p>
+
+          {profError && <div style={{ color: '#ef4444', marginBottom: '1rem', fontSize: '0.9rem' }}>{profError}</div>}
+          {profSuccess && <div style={{ color: '#10b981', marginBottom: '1rem', fontSize: '0.9rem' }}>{profSuccess}</div>}
+
+          <form onSubmit={handleChangeProfessor} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <input
+              type="email"
+              placeholder="Email del nuevo profesor..."
+              value={newProfessorEmail}
+              onChange={(e) => setNewProfessorEmail(e.target.value)}
+              required
+              style={{ padding: '0.75rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.3)', color: 'white' }}
+            />
+            <button type="submit" className="btn-submit-progress" style={{ width: 'auto', alignSelf: 'flex-start', padding: '0.75rem 2rem' }}>
+              Guardar Cambios
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Modal para Registro de Progreso */}
+      {selectedExercise && (
+        <div className="modal-overlay" onClick={() => setSelectedExercise(null)}>
+          <div className="modal-content-small" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-small">
+              <h3>Registrar Progreso: {selectedExercise.nombre}</h3>
+              <button
+                style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '1.2rem', cursor: 'pointer' }}
+                onClick={() => setSelectedExercise(null)}
+              >
+                ✖
+              </button>
+            </div>
+
+            {progressSuccessMsg ? (
+              <div style={{ color: '#34d399', textAlign: 'center', padding: '2rem 0', fontWeight: 'bold', fontSize: '1.2rem' }}>
+                {progressSuccessMsg}
               </div>
-            ))}
+            ) : (
+              <form onSubmit={handleProgressSubmit}>
+                <div className="form-row-2">
+                  <div className="progress-form-group">
+                    <label>Peso usado (kg)</label>
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      value={pesoUsado}
+                      onChange={(e) => setPesoUsado(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="progress-form-group">
+                    <label>Series completadas</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={setsRealizados}
+                      onChange={(e) => setSetsRealizados(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="progress-form-group">
+                  <label>Repeticiones logradas</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={repsRealizadas}
+                    onChange={(e) => setRepsRealizadas(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="progress-form-group">
+                  <label>Notas (opcional)</label>
+                  <textarea
+                    rows="3"
+                    placeholder="Ej: Costó la última repetición, buenas sensaciones"
+                    value={notas}
+                    onChange={(e) => setNotas(e.target.value)}
+                  ></textarea>
+                </div>
+
+                <button
+                  type="submit"
+                  className="btn-submit-progress"
+                  disabled={submittingProgress}
+                >
+                  {submittingProgress ? 'Guardando...' : 'Guardar Progreso'}
+                </button>
+              </form>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
