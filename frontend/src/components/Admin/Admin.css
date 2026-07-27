@@ -411,3 +411,47 @@
   color: #a5b4fc;
 }
 
+/* Media tabs (Subir archivo / URL) */
+.media-tabs {
+  display: flex;
+  gap: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  margin-bottom: 0.7rem;
+  width: fit-content;
+}
+
+.media-tab {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 0.45rem 1rem;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-family: inherit;
+  transition: all 0.2s;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.media-tab:last-child {
+  border-right: none;
+}
+
+.media-tab:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #e2e8f0;
+}
+
+.media-tab.active {
+  background: rgba(99, 102, 241, 0.25);
+  color: #a5b4fc;
+  font-weight: 600;
+}
+
+.media-input-area {
+  display: flex;
+  flex-direction: column;
+}
+
+
