@@ -9,10 +9,15 @@ const getAuthHeaders = () => {
 };
 
 export const apiFetch = async (url, options = {}) => {
+  const headers = getAuthHeaders();
+  if (options.body instanceof FormData) {
+    delete headers['Content-Type'];
+  }
+
   const finalOptions = {
     ...options,
     headers: {
-      ...getAuthHeaders(),
+      ...headers,
       ...options.headers,
     }
   };

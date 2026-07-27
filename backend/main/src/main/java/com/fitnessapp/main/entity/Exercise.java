@@ -18,4 +18,8 @@ public class Exercise {
     private String musculo;
 
     private String descripcion;
+
+    private String imagenUrl;
+
+    private String videoUrl;
 }

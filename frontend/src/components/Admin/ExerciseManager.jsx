@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { apiFetch } from '../../utils/api';
 
 const ExerciseManager = () => {
@@ -10,7 +10,13 @@ const ExerciseManager = () => {
   const [nombre, setNombre] = useState('');
   const [musculo, setMusculo] = useState('Pecho');
   const [descripcion, setDescripcion] = useState('');
+  const [imageFile, setImageFile] = useState(null);
+  const [videoFile, setVideoFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [statusText, setStatusText] = useState('');
+
+  const imageInputRef = useRef(null);
+  const videoInputRef = useRef(null);
 
   const muscleGroups = ['Pecho', 'Espalda', 'Bíceps', 'Tríceps', 'Hombros', 'Abdomen', 'Piernas'];
 
@@ -32,15 +38,48 @@ const ExerciseManager = () => {
     }
   };
 
+  const uploadMedia = async (file) => {
+    if (!file) return '';
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await apiFetch('/api/exercises/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Error al subir el archivo ${file.name}`);
+    }
+
+    const data = await response.json();
+    return data.url || '';
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError('');
 
     try {
+      let imagenUrl = '';
+      let videoUrl = '';
+
+      if (imageFile) {
+        setStatusText('Subiendo imagen a Cloudinary...');
+        imagenUrl = await uploadMedia(imageFile);
+      }
+
+      if (videoFile) {
+        setStatusText('Subiendo video a Cloudinary...');
+        videoUrl = await uploadMedia(videoFile);
+      }
+
+      setStatusText('Guardando ejercicio...');
       const response = await apiFetch('/api/exercises', {
         method: 'POST',
-        body: JSON.stringify({ nombre, musculo, descripcion })
+        body: JSON.stringify({ nombre, musculo, descripcion, imagenUrl, videoUrl })
       });
 
       if (!response.ok) throw new Error('Error al crear el ejercicio');
@@ -48,11 +87,16 @@ const ExerciseManager = () => {
       // Limpiar formulario y recargar
       setNombre('');
       setDescripcion('');
+      setImageFile(null);
+      setVideoFile(null);
+      if (imageInputRef.current) imageInputRef.current.value = '';
+      if (videoInputRef.current) videoInputRef.current.value = '';
       fetchExercises();
     } catch (err) {
       setError(err.message);
     } finally {
       setIsSubmitting(false);
+      setStatusText('');
     }
   };
 
@@ -103,8 +147,26 @@ const ExerciseManager = () => {
                 rows="3"
               ></textarea>
             </div>
+            <div className="form-group">
+              <label>Imagen del Ejercicio</label>
+              <input 
+                type="file" 
+                accept="image/*"
+                ref={imageInputRef}
+                onChange={(e) => setImageFile(e.target.files[0] || null)}
+              />
+            </div>
+            <div className="form-group">
+              <label>Video Demostrativo</label>
+              <input 
+                type="file" 
+                accept="video/*"
+                ref={videoInputRef}
+                onChange={(e) => setVideoFile(e.target.files[0] || null)}
+              />
+            </div>
             <button type="submit" className="btn-primary" disabled={isSubmitting}>
-              {isSubmitting ? 'Guardando...' : '➕ Añadir Ejercicio'}
+              {isSubmitting ? (statusText || 'Procesando...') : '➕ Añadir Ejercicio'}
             </button>
           </form>
         </div>
@@ -121,7 +183,19 @@ const ExerciseManager = () => {
                     <div className="ex-details">
                       <h4>{ex.nombre}</h4>
                       <span className="badge">{ex.musculo}</span>
-                      <p>{ex.descripcion}</p>
+                      {ex.descripcion && <p>{ex.descripcion}</p>}
+                      {(ex.imagenUrl || ex.videoUrl) && (
+                        <div className="ex-media">
+                          {ex.imagenUrl && (
+                            <img src={ex.imagenUrl} alt={ex.nombre} className="ex-thumb" />
+                          )}
+                          {ex.videoUrl && (
+                            <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="video-link">
+                              🎬 Ver Video
+                            </a>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <button className="btn-danger" onClick={() => handleDelete(ex.id)}>❌</button>
                   </div>
