@@ -142,6 +142,29 @@
   background: rgba(239, 68, 68, 0.2);
 }
 
+.btn-edit {
+  background: rgba(99, 102, 241, 0.1);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  padding: 0.5rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.2s;
+}
+.btn-edit:hover {
+  background: rgba(99, 102, 241, 0.25);
+}
+
+.ex-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-end;
+  flex-shrink: 0;
+  margin-left: 1rem;
+}
+
 /* Manager Layout */
 .manager-layout {
   display: grid;

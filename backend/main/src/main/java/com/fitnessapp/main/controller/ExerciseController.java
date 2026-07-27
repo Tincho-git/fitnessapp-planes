@@ -51,6 +51,16 @@ public class ExerciseController {
         }
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<Exercise> updateExercise(@PathVariable Long id, @RequestBody Exercise exercise) {
+        try {
+            Exercise updated = exerciseService.updateExercise(id, exercise);
+            return ResponseEntity.ok(updated);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteExercise(@PathVariable Long id) {
         exerciseService.deleteExercise(id);

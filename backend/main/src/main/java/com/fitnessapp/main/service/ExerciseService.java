@@ -32,6 +32,12 @@ public class ExerciseService {
             exercise.setNombre(exerciseDetails.getNombre());
             exercise.setMusculo(exerciseDetails.getMusculo());
             exercise.setDescripcion(exerciseDetails.getDescripcion());
+            if (exerciseDetails.getImagenUrl() != null) {
+                exercise.setImagenUrl(exerciseDetails.getImagenUrl());
+            }
+            if (exerciseDetails.getVideoUrl() != null) {
+                exercise.setVideoUrl(exerciseDetails.getVideoUrl());
+            }
             return exerciseRepository.save(exercise);
         }).orElseThrow(() -> new RuntimeException("Exercise no encontrado"));
     }
