@@ -4,6 +4,15 @@ Backend REST API con Spring Boot 4 + PostgreSQL para gestión de planes de entre
 
 ---
 
+## ✨ Últimas Mejoras
+
+- **Sistema de Progreso de Ejercicios:** Los clientes pueden registrar el peso y las repeticiones por cada ejercicio, y ver su evolución en gráficos.
+- **Panel de Profesor Mejorado:** Los profesores pueden ver los registros y la evolución histórica de sus clientes mediante gráficos detallados.
+- **Sesiones Aisladas por Pestaña:** Se implementó `sessionStorage` para mantener las sesiones de forma independiente por cada pestaña del navegador, permitiendo iniciar sesión como distintos usuarios simultáneamente.
+
+---
+
+
 ## 🛠️ Requisitos
 
 | Herramienta | Versión mínima |
