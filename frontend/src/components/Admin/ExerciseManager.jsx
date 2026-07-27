@@ -6,7 +6,8 @@ const ExerciseManager = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Form State (crear)
+  // Modal Crear
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [nombre, setNombre] = useState('');
   const [musculo, setMusculo] = useState('Pecho');
   const [descripcion, setDescripcion] = useState('');
@@ -15,7 +16,7 @@ const ExerciseManager = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusText, setStatusText] = useState('');
 
-  // Modal edicion
+  // Modal Editar
   const [editingExercise, setEditingExercise] = useState(null);
   const [editNombre, setEditNombre] = useState('');
   const [editMusculo, setEditMusculo] = useState('Pecho');
@@ -69,6 +70,22 @@ const ExerciseManager = () => {
     return data.url || '';
   };
 
+  // --- CREAR ---
+  const openCreateModal = () => {
+    setNombre('');
+    setMusculo('Pecho');
+    setDescripcion('');
+    setImageFile(null);
+    setVideoFile(null);
+    setError('');
+    setShowCreateModal(true);
+  };
+
+  const closeCreateModal = () => {
+    setShowCreateModal(false);
+    setError('');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -95,12 +112,7 @@ const ExerciseManager = () => {
 
       if (!response.ok) throw new Error('Error al crear el ejercicio');
 
-      setNombre('');
-      setDescripcion('');
-      setImageFile(null);
-      setVideoFile(null);
-      if (imageInputRef.current) imageInputRef.current.value = '';
-      if (videoInputRef.current) videoInputRef.current.value = '';
+      closeCreateModal();
       fetchExercises();
     } catch (err) {
       setError(err.message);
@@ -110,6 +122,7 @@ const ExerciseManager = () => {
     }
   };
 
+  // --- EDITAR ---
   const openEditModal = (ex) => {
     setEditingExercise(ex);
     setEditNombre(ex.nombre);
@@ -117,6 +130,7 @@ const ExerciseManager = () => {
     setEditDescripcion(ex.descripcion || '');
     setEditImageFile(null);
     setEditVideoFile(null);
+    setError('');
     if (editImageInputRef.current) editImageInputRef.current.value = '';
     if (editVideoInputRef.current) editVideoInputRef.current.value = '';
   };
@@ -168,6 +182,7 @@ const ExerciseManager = () => {
     }
   };
 
+  // --- ELIMINAR ---
   const handleDelete = async (id) => {
     if (!window.confirm('¿Seguro que deseas eliminar este ejercicio?')) return;
 
@@ -180,106 +195,150 @@ const ExerciseManager = () => {
     }
   };
 
+  // Formulario compartido (create o edit)
+  const MediaFormFields = ({
+    currentImagenUrl, currentVideoUrl,
+    imgRef, vidRef,
+    onImageChange, onVideoChange,
+    isEdit
+  }) => (
+    <>
+      <div className="form-group">
+        <label>Imagen del Ejercicio</label>
+        {isEdit && currentImagenUrl && (
+          <img src={currentImagenUrl} alt="actual" className="ex-thumb" style={{ display: 'block', marginBottom: '0.5rem' }} />
+        )}
+        {isEdit && !currentImagenUrl && (
+          <p style={{ color: '#64748b', fontSize: '0.85rem', margin: '0 0 0.5rem 0' }}>Sin imagen</p>
+        )}
+        <input type="file" accept="image/*" ref={imgRef} onChange={(e) => onImageChange(e.target.files[0] || null)} />
+      </div>
+      <div className="form-group">
+        <label>Video Demostrativo</label>
+        {isEdit && currentVideoUrl && (
+          <a href={currentVideoUrl} target="_blank" rel="noopener noreferrer" className="video-link" style={{ display: 'inline-flex', marginBottom: '0.5rem' }}>
+            🎬 Ver Video actual
+          </a>
+        )}
+        {isEdit && !currentVideoUrl && (
+          <p style={{ color: '#64748b', fontSize: '0.85rem', margin: '0 0 0.5rem 0' }}>Sin video</p>
+        )}
+        <input type="file" accept="video/*" ref={vidRef} onChange={(e) => onVideoChange(e.target.files[0] || null)} />
+      </div>
+    </>
+  );
+
   return (
     <div className="exercise-manager">
-      <h2>Catálogo de Ejercicios</h2>
-
-      {error && <div className="error-alert">{error}</div>}
-
-      <div className="manager-layout">
-        {/* Formulario crear */}
-        <div className="form-section">
-          <h3>Añadir Nuevo Ejercicio</h3>
-          <form onSubmit={handleSubmit} className="custom-form">
-            <div className="form-group">
-              <label>Nombre del Ejercicio</label>
-              <input
-                type="text"
-                value={nombre}
-                onChange={(e) => setNombre(e.target.value)}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Grupo Muscular</label>
-              <select value={musculo} onChange={(e) => setMusculo(e.target.value)}>
-                {muscleGroups.map(m => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Descripción</label>
-              <textarea
-                value={descripcion}
-                onChange={(e) => setDescripcion(e.target.value)}
-                rows="3"
-              ></textarea>
-            </div>
-            <div className="form-group">
-              <label>Imagen del Ejercicio</label>
-              <input
-                type="file"
-                accept="image/*"
-                ref={imageInputRef}
-                onChange={(e) => setImageFile(e.target.files[0] || null)}
-              />
-            </div>
-            <div className="form-group">
-              <label>Video Demostrativo</label>
-              <input
-                type="file"
-                accept="video/*"
-                ref={videoInputRef}
-                onChange={(e) => setVideoFile(e.target.files[0] || null)}
-              />
-            </div>
-            <button type="submit" className="btn-primary" disabled={isSubmitting}>
-              {isSubmitting ? (statusText || 'Procesando...') : '➕ Añadir Ejercicio'}
-            </button>
-          </form>
-        </div>
-
-        {/* Lista ejercicios */}
-        <div className="list-section">
-          <h3>Ejercicios Disponibles</h3>
-          {loading ? <p>Cargando...</p> : (
-            <div className="exercise-list">
-              {exercises.length === 0 ? (
-                <p className="empty-state">No hay ejercicios en el catálogo.</p>
-              ) : (
-                exercises.map(ex => (
-                  <div key={ex.id} className="exercise-item">
-                    <div className="ex-details">
-                      <h4>{ex.nombre}</h4>
-                      <span className="badge">{ex.musculo}</span>
-                      {ex.descripcion && <p>{ex.descripcion}</p>}
-                      {(ex.imagenUrl || ex.videoUrl) && (
-                        <div className="ex-media">
-                          {ex.imagenUrl && (
-                            <img src={ex.imagenUrl} alt={ex.nombre} className="ex-thumb" />
-                          )}
-                          {ex.videoUrl && (
-                            <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="video-link">
-                              🎬 Ver Video
-                            </a>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <div className="ex-actions">
-                      <button className="btn-edit" onClick={() => openEditModal(ex)}>✏️ Editar</button>
-                      <button className="btn-danger" onClick={() => handleDelete(ex.id)}>❌</button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-        </div>
+      <div className="section-header">
+        <h2>Catálogo de Ejercicios</h2>
+        <button className="btn-primary" onClick={openCreateModal} style={{ width: 'auto', padding: '0.6rem 1.4rem' }}>
+          ➕ Nuevo Ejercicio
+        </button>
       </div>
 
-      {/* Modal de Edición */}
+      {error && !showCreateModal && !editingExercise && <div className="error-alert">{error}</div>}
+
+      {loading ? (
+        <p>Cargando...</p>
+      ) : (
+        <div className="exercise-list">
+          {exercises.length === 0 ? (
+            <p className="empty-state">No hay ejercicios en el catálogo. ¡Crea el primero!</p>
+          ) : (
+            exercises.map(ex => (
+              <div key={ex.id} className="exercise-item">
+                <div className="ex-details">
+                  <h4>{ex.nombre}</h4>
+                  <span className="badge">{ex.musculo}</span>
+                  {ex.descripcion && <p>{ex.descripcion}</p>}
+                  {(ex.imagenUrl || ex.videoUrl) && (
+                    <div className="ex-media">
+                      {ex.imagenUrl && (
+                        <img src={ex.imagenUrl} alt={ex.nombre} className="ex-thumb" />
+                      )}
+                      {ex.videoUrl && (
+                        <a href={ex.videoUrl} target="_blank" rel="noopener noreferrer" className="video-link">
+                          🎬 Ver Video
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="ex-actions">
+                  <button className="btn-edit" onClick={() => openEditModal(ex)}>✏️ Editar</button>
+                  <button className="btn-danger" onClick={() => handleDelete(ex.id)}>❌ Eliminar</button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* ======== MODAL CREAR ======== */}
+      {showCreateModal && (
+        <div className="modal-overlay" onClick={closeCreateModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>➕ Nuevo Ejercicio</h2>
+              <button className="btn-close" onClick={closeCreateModal}>✕</button>
+            </div>
+            <div style={{ padding: '2rem' }}>
+              {error && <div className="error-alert">{error}</div>}
+              <form onSubmit={handleSubmit} className="custom-form">
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Nombre del Ejercicio</label>
+                    <input
+                      type="text"
+                      value={nombre}
+                      onChange={(e) => setNombre(e.target.value)}
+                      placeholder="Ej: Press de banca"
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Grupo Muscular</label>
+                    <select value={musculo} onChange={(e) => setMusculo(e.target.value)}>
+                      {muscleGroups.map(m => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>Descripción</label>
+                  <textarea
+                    value={descripcion}
+                    onChange={(e) => setDescripcion(e.target.value)}
+                    rows="3"
+                    placeholder="Describe cómo se realiza el ejercicio..."
+                  ></textarea>
+                </div>
+                <MediaFormFields
+                  currentImagenUrl={null}
+                  currentVideoUrl={null}
+                  imgRef={imageInputRef}
+                  vidRef={videoInputRef}
+                  onImageChange={setImageFile}
+                  onVideoChange={setVideoFile}
+                  isEdit={false}
+                />
+                <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                  <button type="submit" className="btn-primary" disabled={isSubmitting} style={{ flex: 1 }}>
+                    {isSubmitting ? (statusText || 'Procesando...') : '💾 Crear Ejercicio'}
+                  </button>
+                  <button type="button" className="btn-danger" onClick={closeCreateModal} style={{ flex: 1 }}>
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======== MODAL EDITAR ======== */}
       {editingExercise && (
         <div className="modal-overlay" onClick={closeEditModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -287,7 +346,6 @@ const ExerciseManager = () => {
               <h2>✏️ Editar Ejercicio</h2>
               <button className="btn-close" onClick={closeEditModal}>✕</button>
             </div>
-
             <div style={{ padding: '2rem' }}>
               {error && <div className="error-alert">{error}</div>}
               <form onSubmit={handleEditSubmit} className="custom-form">
@@ -310,7 +368,6 @@ const ExerciseManager = () => {
                     </select>
                   </div>
                 </div>
-
                 <div className="form-group">
                   <label>Descripción</label>
                   <textarea
@@ -319,43 +376,15 @@ const ExerciseManager = () => {
                     rows="3"
                   ></textarea>
                 </div>
-
-                {/* Imagen actual */}
-                <div className="form-group">
-                  <label>Imagen actual</label>
-                  {editingExercise.imagenUrl ? (
-                    <img src={editingExercise.imagenUrl} alt="actual" className="ex-thumb" style={{ display: 'block', marginBottom: '0.5rem' }} />
-                  ) : (
-                    <p style={{ color: '#64748b', fontSize: '0.85rem', margin: '0 0 0.5rem 0' }}>Sin imagen</p>
-                  )}
-                  <label>Reemplazar imagen</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    ref={editImageInputRef}
-                    onChange={(e) => setEditImageFile(e.target.files[0] || null)}
-                  />
-                </div>
-
-                {/* Video actual */}
-                <div className="form-group">
-                  <label>Video actual</label>
-                  {editingExercise.videoUrl ? (
-                    <a href={editingExercise.videoUrl} target="_blank" rel="noopener noreferrer" className="video-link" style={{ display: 'inline-flex', marginBottom: '0.5rem' }}>
-                      🎬 Ver Video actual
-                    </a>
-                  ) : (
-                    <p style={{ color: '#64748b', fontSize: '0.85rem', margin: '0 0 0.5rem 0' }}>Sin video</p>
-                  )}
-                  <label>Reemplazar video</label>
-                  <input
-                    type="file"
-                    accept="video/*"
-                    ref={editVideoInputRef}
-                    onChange={(e) => setEditVideoFile(e.target.files[0] || null)}
-                  />
-                </div>
-
+                <MediaFormFields
+                  currentImagenUrl={editingExercise.imagenUrl}
+                  currentVideoUrl={editingExercise.videoUrl}
+                  imgRef={editImageInputRef}
+                  vidRef={editVideoInputRef}
+                  onImageChange={setEditImageFile}
+                  onVideoChange={setEditVideoFile}
+                  isEdit={true}
+                />
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
                   <button type="submit" className="btn-primary" disabled={isEditing} style={{ flex: 1 }}>
                     {isEditing ? (editStatusText || 'Guardando...') : '💾 Guardar Cambios'}
