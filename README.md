@@ -10,7 +10,8 @@ Backend REST API con Spring Boot 4 + PostgreSQL para gestión de planes de entre
 - **Panel de Profesor Mejorado:** Los profesores pueden ver los registros y la evolución histórica de sus clientes mediante gráficos detallados.
 - **Sesiones Aisladas por Pestaña:** Se implementó `sessionStorage` para mantener las sesiones de forma independiente por cada pestaña del navegador, permitiendo iniciar sesión como distintos usuarios simultáneamente.
 - **Rediseño de Interfaz de Cliente & Saludo:** Menú lateral a la izquierda en el panel del cliente consistente con el del profesor, y saludo personalizado con el nombre del usuario.
-
+- **Integracion con Cloudinary para imagenes.
+- **Implementacion de links mediante Youtube.
 ---
 
 
