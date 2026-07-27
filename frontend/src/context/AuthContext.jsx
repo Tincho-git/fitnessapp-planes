@@ -20,16 +20,14 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    // Check if token exists on load
-    const token = localStorage.getItem('jwtToken');
+    // Check if token exists in sessionStorage for this specific tab
+    const token = sessionStorage.getItem('jwtToken');
     if (token) {
       const decoded = parseJwt(token);
       if (decoded && decoded.exp * 1000 > Date.now()) {
-        // En Spring Security normalmente el rol viaja en un claim llamado 'roles' o similar
-        // Ajusta esto según lo que insertes en el token
         setUser({ email: decoded.sub, role: decoded.role || 'CLIENT' });
       } else {
-        localStorage.removeItem('jwtToken');
+        sessionStorage.removeItem('jwtToken');
       }
     }
   }, []);
@@ -46,10 +44,10 @@ export const AuthProvider = ({ children }) => {
 
       const data = await response.json();
       const token = data.accessToken;
-      
-      localStorage.setItem('jwtToken', token);
+
+      sessionStorage.setItem('jwtToken', token);
       const decoded = parseJwt(token);
-      
+
       setUser({ email: decoded.sub, role: decoded.role || 'CLIENT' });
       return true;
     } catch (error) {
@@ -59,7 +57,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('jwtToken');
+    sessionStorage.removeItem('jwtToken');
     setUser(null);
   };
 
