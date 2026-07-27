@@ -3,6 +3,26 @@ import { apiFetch } from '../../utils/api';
 import ClientMetrics from './ClientMetrics';
 import './Client.css';
 
+const getEmbedVideoUrl = (url) => {
+  if (!url) return null;
+  // YouTube URLs: https://www.youtube.com/watch?v=ID or https://youtu.be/ID or https://www.youtube.com/embed/ID
+  const youtubeMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+  if (youtubeMatch && youtubeMatch[1]) {
+    return { type: 'iframe', src: `https://www.youtube.com/embed/${youtubeMatch[1]}?autoplay=1` };
+  }
+  // Vimeo URL: https://vimeo.com/ID
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+  if (vimeoMatch && vimeoMatch[1]) {
+    return { type: 'iframe', src: `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1` };
+  }
+  // Direct video link (.mp4, .webm, .ogg, cloudinary video url)
+  if (url.match(/\.(mp4|webm|ogg)$/i) || url.includes('/video/upload/')) {
+    return { type: 'video', src: url };
+  }
+  // Fallback iframe
+  return { type: 'iframe', src: url };
+};
+
 const ClientDashboard = () => {
   const [activeTab, setActiveTab] = useState('plan'); // 'plan', 'metrics', 'settings'
   const [plans, setPlans] = useState([]);
@@ -22,6 +42,9 @@ const ClientDashboard = () => {
   const [notas, setNotas] = useState('');
   const [submittingProgress, setSubmittingProgress] = useState(false);
   const [progressSuccessMsg, setProgressSuccessMsg] = useState('');
+
+  // Modal State for Video Player
+  const [videoModalData, setVideoModalData] = useState(null); // { url, title }
 
   useEffect(() => {
     fetchPlansAndProgress();
@@ -70,6 +93,11 @@ const ClientDashboard = () => {
     setSetsRealizados(planItem.sets ? planItem.sets.toString() : '');
     setNotas('');
     setProgressSuccessMsg('');
+  };
+
+  const openVideoModal = (e, videoUrl, exerciseName) => {
+    e.stopPropagation();
+    setVideoModalData({ url: videoUrl, title: exerciseName });
   };
 
   const handleProgressSubmit = async (e) => {
@@ -179,7 +207,17 @@ const ClientDashboard = () => {
                       className="exercise-card-client"
                       onClick={() => openProgressModal(planItem)}
                     >
-                      <div>
+                      {ex.imagenUrl && (
+                        <div className="exercise-card-image-container">
+                          <img
+                            src={ex.imagenUrl}
+                            alt={ex.nombre}
+                            className="exercise-card-img"
+                            onError={(e) => { e.target.parentElement.style.display = 'none'; }}
+                          />
+                        </div>
+                      )}
+                      <div className="exercise-card-body">
                         <div className="card-header-row">
                           <h3 className="exercise-name-title">{ex.nombre}</h3>
                           {loggedToday && (
@@ -189,6 +227,11 @@ const ClientDashboard = () => {
                           )}
                         </div>
                         <div className="exercise-muscle-tag">🎯 {ex.musculo}</div>
+
+                        {ex.descripcion && (
+                          <p className="exercise-description">{ex.descripcion}</p>
+                        )}
+
                         <div className="exercise-stats-row">
                           <span><strong>Sets:</strong> {planItem.sets}</span>
                           <span><strong>Reps:</strong> {planItem.reps}</span>
@@ -201,9 +244,20 @@ const ClientDashboard = () => {
                             "{planItem.notasExtras}"
                           </p>
                         )}
-                      </div>
-                      <div className="card-action-text">
-                        ➕ Hacer click para registrar progreso
+                        <div className="exercise-card-actions">
+                          {ex.videoUrl && (
+                            <button
+                              type="button"
+                              className="btn-view-video"
+                              onClick={(e) => openVideoModal(e, ex.videoUrl, ex.nombre)}
+                            >
+                              🎬 Ver Video Demostrativo
+                            </button>
+                          )}
+                          <div className="card-action-text">
+                            ➕ Hacer click para registrar progreso
+                          </div>
+                        </div>
                       </div>
                     </div>
                   );
@@ -265,6 +319,28 @@ const ClientDashboard = () => {
                 ✖
               </button>
             </div>
+
+            {selectedExercise.imagenUrl && (
+              <div className="modal-exercise-media">
+                <img
+                  src={selectedExercise.imagenUrl}
+                  alt={selectedExercise.nombre}
+                  className="modal-exercise-img"
+                  onError={(e) => { e.target.parentElement.style.display = 'none'; }}
+                />
+              </div>
+            )}
+
+            {selectedExercise.videoUrl && (
+              <button
+                type="button"
+                className="btn-view-video"
+                style={{ marginBottom: '1rem', width: '100%' }}
+                onClick={(e) => openVideoModal(e, selectedExercise.videoUrl, selectedExercise.nombre)}
+              >
+                🎬 Ver Video de la Técnica
+              </button>
+            )}
 
             {progressSuccessMsg ? (
               <div style={{ color: '#34d399', textAlign: 'center', padding: '2rem 0', fontWeight: 'bold', fontSize: '1.2rem' }}>
@@ -329,8 +405,58 @@ const ClientDashboard = () => {
           </div>
         </div>
       )}
+
+      {/* Modal para Visualizar Video */}
+      {videoModalData && (
+        <div className="modal-overlay" onClick={() => setVideoModalData(null)}>
+          <div className="video-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-small">
+              <h3>🎬 Demostración: {videoModalData.title}</h3>
+              <button
+                style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '1.2rem', cursor: 'pointer' }}
+                onClick={() => setVideoModalData(null)}
+              >
+                ✖
+              </button>
+            </div>
+            <div className="video-player-container">
+              {(() => {
+                const embed = getEmbedVideoUrl(videoModalData.url);
+                if (!embed) return <p style={{ color: '#cbd5e1', padding: '2rem', textAlign: 'center' }}>Video no disponible</p>;
+                if (embed.type === 'video') {
+                  return (
+                    <video src={embed.src} controls autoPlay className="video-element">
+                      Tu navegador no soporta el reproductor de video.
+                    </video>
+                  );
+                }
+                return (
+                  <iframe
+                    src={embed.src}
+                    title={`Video demostrativo de ${videoModalData.title}`}
+                    className="video-iframe"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                );
+              })()}
+            </div>
+            <div style={{ marginTop: '1rem', textAlign: 'right' }}>
+              <a
+                href={videoModalData.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: '#818cf8', fontSize: '0.85rem', textDecoration: 'none' }}
+              >
+                🔗 Abrir video en pestaña nueva ↗
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default ClientDashboard;
+
