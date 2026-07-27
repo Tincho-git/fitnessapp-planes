@@ -1,8 +1,11 @@
 package com.fitnessapp.main.service;
 
 import com.fitnessapp.main.entity.Exercise;
+import com.fitnessapp.main.repository.ExerciseProgressRepository;
 import com.fitnessapp.main.repository.ExerciseRepository;
+import com.fitnessapp.main.repository.TrainingPlanRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -10,9 +13,15 @@ import java.util.Optional;
 @Service
 public class ExerciseService {
     private final ExerciseRepository exerciseRepository;
+    private final TrainingPlanRepository trainingPlanRepository;
+    private final ExerciseProgressRepository exerciseProgressRepository;
 
-    public ExerciseService(ExerciseRepository exerciseRepository) {
+    public ExerciseService(ExerciseRepository exerciseRepository,
+                           TrainingPlanRepository trainingPlanRepository,
+                           ExerciseProgressRepository exerciseProgressRepository) {
         this.exerciseRepository = exerciseRepository;
+        this.trainingPlanRepository = trainingPlanRepository;
+        this.exerciseProgressRepository = exerciseProgressRepository;
     }
 
     public List<Exercise> getAllExercises() {
@@ -42,7 +51,11 @@ public class ExerciseService {
         }).orElseThrow(() -> new RuntimeException("Exercise no encontrado"));
     }
 
+    @Transactional
     public void deleteExercise(Long id) {
+        trainingPlanRepository.deleteByExerciseId(id);
+        exerciseProgressRepository.deleteByExerciseId(id);
         exerciseRepository.deleteById(id);
     }
 }
+

@@ -10,4 +10,5 @@ import java.util.List;
 public interface TrainingPlanRepository extends JpaRepository<TrainingPlan, Long> {
     List<TrainingPlan> findByUserId(Long userId);
     List<TrainingPlan> findByUserEmail(String email);
+    void deleteByExerciseId(Long exerciseId);
 }

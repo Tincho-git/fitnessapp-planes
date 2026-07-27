@@ -12,4 +12,5 @@ public interface ExerciseProgressRepository extends JpaRepository<ExerciseProgre
     List<ExerciseProgress> findByClientIdAndExerciseIdOrderByFechaAsc(Long clientId, Long exerciseId);
     List<ExerciseProgress> findByClientEmailOrderByFechaDesc(String email);
     List<ExerciseProgress> findByClientEmailAndExerciseIdOrderByFechaAsc(String email, Long exerciseId);
+    void deleteByExerciseId(Long exerciseId);
 }
