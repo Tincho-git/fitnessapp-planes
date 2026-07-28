@@ -222,9 +222,15 @@ const AssignPlanForm = ({ client, onClose }) => {
     <div className="modal-overlay">
       <div className="modal-content large-modal">
         <div className="modal-header">
-          <div>
-            <h2 style={{ marginBottom: '0.25rem' }}>Cliente: {client.nombre}</h2>
-            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <img
+              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(client.nombre)}&background=6366f1&color=fff&size=128&bold=true`}
+              alt={client.nombre}
+              className="client-avatar-modal"
+            />
+            <div>
+              <h2 style={{ marginBottom: '0.25rem' }}>Cliente: {client.nombre}</h2>
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
               <button
                 type="button"
                 className={`nav-btn ${activeModalTab === 'routine' ? 'active' : ''}`}

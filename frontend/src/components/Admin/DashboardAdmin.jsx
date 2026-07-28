@@ -75,9 +75,16 @@ const DashboardAdmin = () => {
               <div className="clients-grid">
                 {clients.map(client => (
                   <div key={client.id} className="client-card">
-                    <div className="client-info">
-                      <h3>{client.nombre}</h3>
-                      <p>{client.email}</p>
+                    <div className="client-card-header">
+                      <img
+                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(client.nombre)}&background=6366f1&color=fff&size=128&bold=true`}
+                        alt={client.nombre}
+                        className="client-avatar"
+                      />
+                      <div className="client-info">
+                        <h3>{client.nombre}</h3>
+                        <p>{client.email}</p>
+                      </div>
                     </div>
                     <button 
                       className="btn-primary"

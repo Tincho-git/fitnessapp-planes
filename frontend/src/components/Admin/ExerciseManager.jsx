@@ -47,16 +47,80 @@ const MediaInput = ({ label, currentUrl, accept, inputRef, onFileChange, onUrlCh
           </a>
         )}
       </div>
-    )}
   </div>
+);
+
+const muscleGroups = ['Pecho', 'Espalda', 'Bíceps', 'Tríceps', 'Hombros', 'Abdomen', 'Piernas'];
+
+// Componente de formulario para crear/editar ejercicio (definido fuera de ExerciseManager para mantener el foco en los inputs)
+const ExerciseForm = ({
+  onSubmit, isProcessing, processingText, onCancel, submitLabel,
+  nameVal, onNameChange,
+  muscleVal, onMuscleChange,
+  descVal, onDescChange,
+  imgFile, onImgFile, imgUrl, onImgUrl, imgMode, onImgMode,
+  vidFile, onVidFile, vidUrl, onVidUrl, vidMode, onVidMode,
+  imgRef, vidRef,
+  currentImagenUrl, currentVideoUrl, isEdit
+}) => (
+  <form onSubmit={onSubmit} className="custom-form">
+    <div className="form-row">
+      <div className="form-group">
+        <label>Nombre del Ejercicio</label>
+        <input type="text" value={nameVal} onChange={(e) => onNameChange(e.target.value)} placeholder="Ej: Press de banca" required />
+      </div>
+      <div className="form-group">
+        <label>Grupo Muscular</label>
+        <select value={muscleVal} onChange={(e) => onMuscleChange(e.target.value)}>
+          {muscleGroups.map(m => <option key={m} value={m}>{m}</option>)}
+        </select>
+      </div>
+    </div>
+    <div className="form-group">
+      <label>Descripción</label>
+      <textarea value={descVal} onChange={(e) => onDescChange(e.target.value)} rows="3" placeholder="Describe cómo se realiza el ejercicio..." />
+    </div>
+
+    <MediaInput
+      label="🖼️ Imagen del Ejercicio"
+      accept="image/*"
+      currentUrl={currentImagenUrl}
+      inputRef={imgRef}
+      onFileChange={onImgFile}
+      onUrlChange={onImgUrl}
+      urlValue={imgUrl}
+      mode={imgMode}
+      onModeChange={onImgMode}
+      isEdit={isEdit}
+    />
+    <MediaInput
+      label="🎬 Video Demostrativo"
+      accept="video/*"
+      currentUrl={currentVideoUrl}
+      inputRef={vidRef}
+      onFileChange={onVidFile}
+      onUrlChange={onVidUrl}
+      urlValue={vidUrl}
+      mode={vidMode}
+      onModeChange={onVidMode}
+      isEdit={isEdit}
+    />
+
+    <div style={{ display: 'flex', gap: '1rem', marginTop: '1.2rem' }}>
+      <button type="submit" className="btn-primary" disabled={isProcessing} style={{ flex: 1 }}>
+        {isProcessing ? (processingText || 'Procesando...') : submitLabel}
+      </button>
+      <button type="button" className="btn-danger" onClick={onCancel} style={{ flex: 1 }}>
+        Cancelar
+      </button>
+    </div>
+  </form>
 );
 
 const ExerciseManager = () => {
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const muscleGroups = ['Pecho', 'Espalda', 'Bíceps', 'Tríceps', 'Hombros', 'Abdomen', 'Piernas'];
 
   // ── MODAL CREAR ──
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -202,71 +266,6 @@ const ExerciseManager = () => {
       setError(err.message);
     }
   };
-
-  // ── FORMULARIO COMPARTIDO (campos básicos + media) ──
-  const ExerciseForm = ({
-    onSubmit, isProcessing, processingText, onCancel, submitLabel,
-    nameVal, onNameChange,
-    muscleVal, onMuscleChange,
-    descVal, onDescChange,
-    imgFile, onImgFile, imgUrl, onImgUrl, imgMode, onImgMode,
-    vidFile, onVidFile, vidUrl, onVidUrl, vidMode, onVidMode,
-    imgRef, vidRef,
-    currentImagenUrl, currentVideoUrl, isEdit
-  }) => (
-    <form onSubmit={onSubmit} className="custom-form">
-      <div className="form-row">
-        <div className="form-group">
-          <label>Nombre del Ejercicio</label>
-          <input type="text" value={nameVal} onChange={(e) => onNameChange(e.target.value)} placeholder="Ej: Press de banca" required />
-        </div>
-        <div className="form-group">
-          <label>Grupo Muscular</label>
-          <select value={muscleVal} onChange={(e) => onMuscleChange(e.target.value)}>
-            {muscleGroups.map(m => <option key={m} value={m}>{m}</option>)}
-          </select>
-        </div>
-      </div>
-      <div className="form-group">
-        <label>Descripción</label>
-        <textarea value={descVal} onChange={(e) => onDescChange(e.target.value)} rows="3" placeholder="Describe cómo se realiza el ejercicio..." />
-      </div>
-
-      <MediaInput
-        label="🖼️ Imagen del Ejercicio"
-        accept="image/*"
-        currentUrl={currentImagenUrl}
-        inputRef={imgRef}
-        onFileChange={onImgFile}
-        onUrlChange={onImgUrl}
-        urlValue={imgUrl}
-        mode={imgMode}
-        onModeChange={onImgMode}
-        isEdit={isEdit}
-      />
-      <MediaInput
-        label="🎬 Video Demostrativo"
-        accept="video/*"
-        currentUrl={currentVideoUrl}
-        inputRef={vidRef}
-        onFileChange={onVidFile}
-        onUrlChange={onVidUrl}
-        urlValue={vidUrl}
-        mode={vidMode}
-        onModeChange={onVidMode}
-        isEdit={isEdit}
-      />
-
-      <div style={{ display: 'flex', gap: '1rem', marginTop: '1.2rem' }}>
-        <button type="submit" className="btn-primary" disabled={isProcessing} style={{ flex: 1 }}>
-          {isProcessing ? (processingText || 'Procesando...') : submitLabel}
-        </button>
-        <button type="button" className="btn-danger" onClick={onCancel} style={{ flex: 1 }}>
-          Cancelar
-        </button>
-      </div>
-    </form>
-  );
 
   return (
     <div className="exercise-manager">
