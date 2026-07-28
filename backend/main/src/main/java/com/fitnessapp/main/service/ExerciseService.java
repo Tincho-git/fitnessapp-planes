@@ -50,8 +50,7 @@ public class ExerciseService {
 
     public Exercise updateExerciseForProfessor(Long id, Exercise exerciseDetails, String email) {
         Exercise exercise = exerciseRepository.findByIdAndCreatedByEmail(id, email)
-                .orElseGet(() -> exerciseRepository.findById(id)
-                        .orElseThrow(() -> new RuntimeException("Ejercicio no encontrado")));
+                .orElseThrow(() -> new org.springframework.security.access.AccessDeniedException("No tiene permisos para modificar este ejercicio"));
 
         exercise.setNombre(exerciseDetails.getNombre());
         exercise.setMusculo(exerciseDetails.getMusculo());
@@ -67,6 +66,8 @@ public class ExerciseService {
 
     @Transactional
     public void deleteExerciseForProfessor(Long id, String email) {
+        exerciseRepository.findByIdAndCreatedByEmail(id, email)
+                .orElseThrow(() -> new org.springframework.security.access.AccessDeniedException("No tiene permisos para eliminar este ejercicio"));
         trainingPlanRepository.deleteByExerciseId(id);
         exerciseProgressRepository.deleteByExerciseId(id);
         exerciseRepository.deleteById(id);

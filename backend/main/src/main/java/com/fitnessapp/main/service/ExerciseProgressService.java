@@ -71,11 +71,8 @@ public class ExerciseProgressService {
         User client = userRepository.findById(clientId)
                 .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
 
-        // Permitir si es su profesor o si es ADMIN
+        // Solo puede acceder el profesor asignado al cliente.
         if (client.getProfesor() != null && client.getProfesor().getId().equals(profesor.getId())) {
-            return;
-        }
-        if ("ADMIN".equals(profesor.getRole())) {
             return;
         }
         throw new RuntimeException("No tiene permisos para ver el progreso de este cliente");

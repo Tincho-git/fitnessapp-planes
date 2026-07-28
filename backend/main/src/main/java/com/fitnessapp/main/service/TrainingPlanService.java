@@ -8,6 +8,7 @@ import com.fitnessapp.main.repository.ExerciseRepository;
 import com.fitnessapp.main.repository.TrainingPlanRepository;
 import com.fitnessapp.main.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
 
@@ -25,9 +26,10 @@ public class TrainingPlanService {
         this.exerciseRepository = exerciseRepository;
     }
 
-    public TrainingPlan createTrainingPlan(TrainingPlanRequest request) {
+    public TrainingPlan createTrainingPlan(TrainingPlanRequest request, String professorEmail) {
         User client = userRepository.findById(request.getClientId())
                 .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+        verifyProfessorOwnsClient(client, professorEmail);
                 
         Exercise exercise = exerciseRepository.findById(request.getExerciseId())
                 .orElseThrow(() -> new RuntimeException("Ejercicio no encontrado"));
@@ -43,11 +45,22 @@ public class TrainingPlanService {
         return trainingPlanRepository.save(plan);
     }
 
-    public void deleteTrainingPlan(Long id) {
-        trainingPlanRepository.deleteById(id);
+    public void deleteTrainingPlan(Long id, String professorEmail) {
+        TrainingPlan plan = trainingPlanRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Plan no encontrado"));
+        verifyProfessorOwnsClient(plan.getUser(), professorEmail);
+        trainingPlanRepository.delete(plan);
     }
 
     public List<TrainingPlan> getMyPlanByEmail(String email) {
         return trainingPlanRepository.findByUserEmail(email);
+    }
+
+    private void verifyProfessorOwnsClient(User client, String professorEmail) {
+        User professor = userRepository.findByEmail(professorEmail)
+                .orElseThrow(() -> new RuntimeException("Profesor no encontrado"));
+        if (client.getProfesor() == null || !client.getProfesor().getId().equals(professor.getId())) {
+            throw new AccessDeniedException("No tiene permisos para modificar el plan de este cliente");
+        }
     }
 }

@@ -5,10 +5,12 @@ import com.fitnessapp.main.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Profile;
 
 import java.util.Optional;
 
 @Component
+@Profile("dev")
 public class DataSeeder implements CommandLineRunner {
 
     private final UserRepository userRepository;
@@ -30,11 +32,23 @@ public class DataSeeder implements CommandLineRunner {
             admin.setEmail(adminEmail);
             admin.setPassword(passwordEncoder.encode("admin123"));
             admin.setRole("ADMIN");
+            admin.setStatus("ACTIVE");
             
             userRepository.save(admin);
             System.out.println("✅ Usuario ADMIN creado exitosamente (admin@fitnessapp.com / admin123)");
         } else {
             System.out.println("✅ Usuario ADMIN ya existe en la base de datos.");
+        }
+
+        String professorEmail = "profesor@fitnessapp.com";
+        if (userRepository.findByEmail(professorEmail).isEmpty()) {
+            User professor = new User();
+            professor.setNombre("Profesor de Prueba");
+            professor.setEmail(professorEmail);
+            professor.setPassword(passwordEncoder.encode("profesor123"));
+            professor.setRole("PROFESOR");
+            professor.setStatus("ACTIVE");
+            userRepository.save(professor);
         }
 
         // Crear usuario CLIENTE de prueba
@@ -47,6 +61,7 @@ public class DataSeeder implements CommandLineRunner {
             client.setEmail(clientEmail);
             client.setPassword(passwordEncoder.encode("cliente123"));
             client.setRole("CLIENT");
+            userRepository.findByEmail(professorEmail).ifPresent(client::setProfesor);
             
             userRepository.save(client);
             System.out.println("✅ Usuario CLIENTE creado exitosamente (cliente@fitnessapp.com / cliente123)");

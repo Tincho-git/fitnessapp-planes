@@ -6,6 +6,7 @@ import com.fitnessapp.main.entity.Exercise;
 import com.fitnessapp.main.service.ExerciseService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -35,12 +36,14 @@ public class ExerciseController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('PROFESOR')")
     public Exercise createExercise(@RequestBody Exercise exercise, Authentication authentication) {
         String email = authentication.getName();
         return exerciseService.createExerciseForProfessor(exercise, email);
     }
 
     @PostMapping("/upload")
+    @PreAuthorize("hasRole('PROFESOR')")
     public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file) {
         try {
             Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap("resource_type", "auto"));
@@ -57,6 +60,7 @@ public class ExerciseController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('PROFESOR')")
     public ResponseEntity<Exercise> updateExercise(@PathVariable Long id, @RequestBody Exercise exercise, Authentication authentication) {
         try {
             String email = authentication.getName();
@@ -68,6 +72,7 @@ public class ExerciseController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('PROFESOR')")
     public ResponseEntity<Void> deleteExercise(@PathVariable Long id, Authentication authentication) {
         String email = authentication.getName();
         exerciseService.deleteExerciseForProfessor(id, email);

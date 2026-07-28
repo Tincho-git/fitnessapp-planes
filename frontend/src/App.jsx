@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/Login/Login';
 import Register from './components/Register/Register';
 import DashboardAdmin from './components/Admin/DashboardAdmin';
+import DashboardProfessor from './components/Professor/DashboardProfessor';
 import ClientDashboard from './components/Client/ClientDashboard';
 
 // route principal
@@ -50,7 +51,9 @@ const MainRouter = () => {
       </header>
       
       <main>
-        {user.role === 'ADMIN' ? <DashboardAdmin /> : <ClientDashboard />}
+        {user.role === 'ADMIN' && <DashboardAdmin />}
+        {user.role === 'PROFESOR' && <DashboardProfessor />}
+        {user.role === 'CLIENT' && <ClientDashboard />}
       </main>
     </>
   );

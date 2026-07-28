@@ -1,132 +1,49 @@
-# FitnessApp — Planes de Entrenamiento
+# FitnessApp — Planes de entrenamiento
 
-Backend REST API con Spring Boot 4 + PostgreSQL para gestión de planes de entrenamiento.
+Aplicación de planes de entrenamiento con React/Vite, Spring Boot, PostgreSQL y Cloudinary.
 
----
+## Requisitos
 
-## ✨ Últimas Mejoras
+- Java 17+
+- Node.js 20+
+- Docker Desktop (para PostgreSQL local)
 
-- **Sistema de Progreso de Ejercicios:** Los clientes pueden registrar el peso y las repeticiones por cada ejercicio, y ver su evolución en gráficos.
-- **Panel de Profesor Mejorado:** Los profesores pueden ver los registros y la evolución histórica de sus clientes mediante gráficos detallados.
-- **Sesiones Aisladas por Pestaña:** Se implementó `sessionStorage` para mantener las sesiones de forma independiente por cada pestaña del navegador, permitiendo iniciar sesión como distintos usuarios simultáneamente.
-- **Rediseño de Interfaz de Cliente & Saludo:** Menú lateral a la izquierda en el panel del cliente consistente con el del profesor, y saludo personalizado con el nombre del usuario.
-- **Integracion con Cloudinary para imagenes.
-- **Implementacion de links mediante Youtube.
----
+## Desarrollo local
 
+1. Copiá `.env.example` a `.env` en la raíz para Docker Compose y completá los valores.
+2. Copiá `backend/main/.env.example` a `backend/main/.env` y usá los mismos secretos.
+3. Copiá `frontend/.env.example` a `frontend/.env.local`.
+4. Ejecutá `docker compose up -d` desde la raíz.
+5. Ejecutá `./mvnw spring-boot:run` desde `backend/main`.
+6. Ejecutá `npm ci && npm run dev` desde `frontend`.
 
-## 🛠️ Requisitos
+El perfil `dev` crea los usuarios de muestra. No se activa en producción.
 
-| Herramienta | Versión mínima |
-|-------------|---------------|
-| Java | 17+ |
-| Maven Wrapper | incluido (`mvnw`) |
-| Docker & Docker Compose | cualquier versión reciente |
+## Variables de entorno
 
----
+Nunca subas un `.env`. Los archivos `.env.example` son plantillas sin secretos.
 
-## 🚀 Setup rápido
+| Variable | Dónde se usa | Nota |
+| --- | --- | --- |
+| `DB_URL`, `DB_USER`, `DB_PASSWORD` | Backend | Conexión PostgreSQL JDBC. |
+| `JWT_SECRET` | Backend | Cadena aleatoria larga. |
+| `CLOUDINARY_*` | Backend | Credenciales nuevas de Cloudinary. |
+| `FRONTEND_URL` | Backend | URL exacta de Vercel para CORS. |
+| `VITE_API_URL` | Frontend | URL pública del backend Render. |
+| `BOOTSTRAP_ADMIN_*` | Backend | Solo primer arranque de producción. |
 
-### 1. Clonar el repositorio
+## Producción
 
-```bash
-git clone https://github.com/Tincho-git/fitnessapp-planes.git
-cd fitnessapp-planes
-```
+1. Creá PostgreSQL en Render (misma región que el backend) o en Neon.
+2. Creá un Web Service de Render con raíz `backend/main` y Dockerfile.
+3. Agregá las variables de entorno del backend en Render. Para el primer deploy configurá `BOOTSTRAP_ADMIN_ENABLED=true` y las variables de admin; tras crear la cuenta, ponelo en `false`.
+4. Creá el proyecto Vercel desde `frontend`, con `VITE_API_URL=https://tu-api.onrender.com`.
+5. Actualizá `FRONTEND_URL` en Render con la URL final de Vercel y redeployá el backend.
 
-### 2. Crear el archivo de variables de entorno
+Las tablas se crean y evolucionan mediante migraciones Flyway ubicadas en `backend/main/src/main/resources/db/migration`.
 
-```bash
-# Windows (PowerShell)
-Copy-Item .env.example .env
+## Roles y altas de cuenta
 
-# Linux / macOS
-cp .env.example .env
-```
-
-Edita `.env` y ajusta los valores si lo necesitás (por defecto funciona sin cambios).
-
-### 3. Levantar la base de datos con Docker
-
-```bash
-docker compose up -d
-```
-
-Esto levanta un contenedor PostgreSQL 16 con:
-- Base de datos: `fitness_app_db`
-- Usuario: `postgres`
-- Contraseña: la que tengas en `.env`
-- Puerto: `5432`
-
-Podés verificar que está listo con:
-
-```bash
-docker compose ps
-```
-
-### 4. Ejecutar el backend
-
-```bash
-cd backend/main
-.\mvnw spring-boot:run       # Windows
-./mvnw spring-boot:run       # Linux / macOS
-```
-
-La API quedará disponible en **http://localhost:8080**
-
----
-
-## 📦 Estructura del proyecto
-
-```
-fitnessapp-planes/
-├── docker-compose.yml       # Base de datos PostgreSQL en Docker
-├── .env.example             # Template de variables de entorno
-├── .env                     # Variables reales (NO commitear)
-├── backend/
-│   └── main/                # Spring Boot API
-│       ├── src/
-│       └── pom.xml
-└── frontend/
-    └── src/                 # Frontend (en desarrollo)
-```
-
----
-
-## 🐳 Comandos Docker útiles
-
-```bash
-# Levantar la base de datos
-docker compose up -d
-
-# Ver logs de PostgreSQL
-docker compose logs -f postgres
-
-# Detener los contenedores
-docker compose down
-
-# Detener Y borrar los datos (reset completo)
-docker compose down -v
-```
-
----
-
-## ⚙️ Variables de entorno
-
-| Variable | Descripción | Default |
-|----------|-------------|---------|
-| `DB_HOST` | Host de PostgreSQL | `localhost` |
-| `DB_PORT` | Puerto de PostgreSQL | `5432` |
-| `DB_NAME` | Nombre de la base de datos | `fitness_app_db` |
-| `DB_USER` | Usuario de PostgreSQL | `postgres` |
-| `DB_PASSWORD` | Contraseña de PostgreSQL | `210405` |
-| `JWT_SECRET` | Clave secreta para JWT | `miClaveSecreta...` |
-| `JWT_EXPIRATION` | Expiración del token (ms) | `86400000` (24h) |
-
----
-
-## 🔐 Seguridad
-
-- **Nunca** subas el archivo `.env` al repositorio.
-- Cambiá `JWT_SECRET` por una clave aleatoria y larga en producción.
-- Cambiá la contraseña de la base de datos en producción.
+- `ADMIN`: se crea inicialmente con `BOOTSTRAP_ADMIN_*`. Revisa y aprueba o rechaza las solicitudes de profesores.
+- `PROFESOR`: se registra desde la web y queda en estado `PENDING` hasta que un administrador lo aprueba. Una vez activo accede a su panel de clientes, ejercicios y planes.
+- `CLIENT`: se registra indicando el email de un profesor activo. Accede a su plan y métricas.

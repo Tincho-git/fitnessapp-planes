@@ -1,5 +1,7 @@
 # Secretos — NUNCA subir al repositorio
-.env
+**/.env
+**/.env.*
+!**/.env.example
 
 # Archivos de build Java
 backend/main/target/

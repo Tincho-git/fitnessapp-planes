@@ -22,7 +22,10 @@ public class User {
     private String password;
 
     @Column(nullable = false)
-    private String role = "CLIENT"; // ADMIN o CLIENT
+    private String role = "CLIENT"; // ADMIN, PROFESOR o CLIENT
+
+    @Column(nullable = false)
+    private String status = "ACTIVE"; // PENDING, ACTIVE o REJECTED
 
     @com.fasterxml.jackson.annotation.JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)

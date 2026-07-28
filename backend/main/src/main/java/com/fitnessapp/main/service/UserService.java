@@ -5,6 +5,7 @@ import com.fitnessapp.main.entity.User;
 import com.fitnessapp.main.repository.TrainingPlanRepository;
 import com.fitnessapp.main.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
 
@@ -30,7 +31,7 @@ public class UserService {
         User newProfesor = userRepository.findByEmail(newProfessorEmail)
                 .orElseThrow(() -> new RuntimeException("Nuevo Profesor no encontrado"));
         
-        if (!"ADMIN".equals(newProfesor.getRole())) {
+        if (!"PROFESOR".equals(newProfesor.getRole()) || !"ACTIVE".equals(newProfesor.getStatus())) {
             throw new RuntimeException("El correo proporcionado no pertenece a un profesor");
         }
         
@@ -38,9 +39,32 @@ public class UserService {
         userRepository.save(client);
     }
 
-    public List<TrainingPlan> getClientPlans(Long clientId) {
-        userRepository.findById(clientId)
+    public List<TrainingPlan> getClientPlans(Long clientId, String requesterEmail) {
+        User client = userRepository.findById(clientId)
                 .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+        User requester = userRepository.findByEmail(requesterEmail)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        boolean isOwner = client.getEmail().equals(requester.getEmail());
+        boolean isAssignedProfessor = client.getProfesor() != null
+                && client.getProfesor().getId().equals(requester.getId());
+        if (!isOwner && !isAssignedProfessor) {
+            throw new AccessDeniedException("No tiene permisos para ver este plan");
+        }
         return trainingPlanRepository.findByUserId(clientId);
+    }
+
+    public List<User> getPendingProfessors() {
+        return userRepository.findByRoleAndStatus("PROFESOR", "PENDING");
+    }
+
+    public void setProfessorStatus(Long professorId, String status) {
+        User professor = userRepository.findById(professorId)
+                .orElseThrow(() -> new RuntimeException("Profesor no encontrado"));
+        if (!"PROFESOR".equals(professor.getRole())) {
+            throw new RuntimeException("El usuario indicado no es profesor");
+        }
+        professor.setStatus(status);
+        userRepository.save(professor);
     }
 }

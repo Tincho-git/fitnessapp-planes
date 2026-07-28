@@ -1,114 +1,40 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { apiFetch } from '../../utils/api';
-import ExerciseManager from './ExerciseManager';
-import AssignPlanForm from './AssignPlanForm';
 import './Admin.css';
 
 const DashboardAdmin = () => {
-  const [activeTab, setActiveTab] = useState('clients');
-  const [clients, setClients] = useState([]);
+  const [pending, setPending] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  
-  const [selectedClient, setSelectedClient] = useState(null);
 
-  useEffect(() => {
-    if (activeTab === 'clients') {
-      fetchClients();
-    }
-  }, [activeTab]);
-
-  const fetchClients = async () => {
-    setLoading(true);
-    setError('');
+  const loadPending = async () => {
+    setLoading(true); setError('');
     try {
-      const response = await apiFetch('/api/users/clients');
-      if (!response.ok) throw new Error('Error al cargar la lista de clientes');
-      const data = await response.json();
-      setClients(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+      const res = await apiFetch('/api/users/admin/professors/pending');
+      if (!res.ok) throw new Error('No se pudieron cargar las solicitudes');
+      setPending(await res.json());
+    } catch (err) { setError(err.message); } finally { setLoading(false); }
   };
 
+  const decide = async (id, action) => {
+    setMessage(''); setError('');
+    try {
+      const res = await apiFetch(`/api/users/admin/professors/${id}/${action}`, { method: 'POST' });
+      if (!res.ok) throw new Error('No se pudo actualizar la solicitud');
+      setMessage(action === 'approve' ? 'Profesor aprobado.' : 'Solicitud rechazada.');
+      loadPending();
+    } catch (err) { setError(err.message); }
+  };
+
+  useEffect(() => { loadPending(); }, []);
   return (
-    <div className="admin-dashboard">
-      <aside className="admin-sidebar">
-        <h2 className="sidebar-title">Panel de Control</h2>
-        <nav className="sidebar-nav">
-          <button 
-            className={`nav-btn ${activeTab === 'clients' ? 'active' : ''}`}
-            onClick={() => setActiveTab('clients')}
-          >
-            👥 Mis Clientes
-          </button>
-          <button 
-            className={`nav-btn ${activeTab === 'exercises' ? 'active' : ''}`}
-            onClick={() => setActiveTab('exercises')}
-          >
-            🏋️ Catálogo de Ejercicios
-          </button>
-        </nav>
-      </aside>
-
-      <main className="admin-content">
-        {error && <div className="error-alert">{error}</div>}
-        
-        {activeTab === 'clients' && (
-          <div className="clients-section">
-            <div className="section-header">
-              <h2>Lista de Clientes</h2>
-              <button className="btn-refresh" onClick={fetchClients} disabled={loading}>
-                {loading ? 'Cargando...' : '🔄 Actualizar'}
-              </button>
-            </div>
-
-            {loading && <p>Cargando datos de clientes...</p>}
-
-            {!loading && clients.length === 0 && (
-              <div className="empty-state">No hay clientes registrados aún.</div>
-            )}
-
-            {!loading && clients.length > 0 && (
-              <div className="clients-grid">
-                {clients.map(client => (
-                  <div key={client.id} className="client-card">
-                    <div className="client-card-header">
-                      <img
-                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(client.nombre)}&background=6366f1&color=fff&size=128&bold=true`}
-                        alt={client.nombre}
-                        className="client-avatar"
-                      />
-                      <div className="client-info">
-                        <h3>{client.nombre}</h3>
-                        <p>{client.email}</p>
-                      </div>
-                    </div>
-                    <button 
-                      className="btn-primary"
-                      onClick={() => setSelectedClient(client)}
-                    >
-                      Ver / Asignar Plan
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'exercises' && <ExerciseManager />}
+    <div className="admin-dashboard"><aside className="admin-sidebar"><h2 className="sidebar-title">Administración</h2></aside>
+      <main className="admin-content"><div className="section-header"><div><h2>Solicitudes de profesores</h2><p>Aprueba solo profesionales que quieras habilitar.</p></div><button className="btn-refresh" onClick={loadPending} disabled={loading}>{loading ? 'Cargando...' : 'Actualizar'}</button></div>
+        {error && <div className="error-alert">{error}</div>}{message && <div style={{ color: '#34d399', marginBottom: '1rem' }}>{message}</div>}
+        {!loading && pending.length === 0 && <div className="empty-state">No hay solicitudes pendientes.</div>}
+        <div className="clients-grid">{pending.map((professor) => <div className="client-card" key={professor.id}><div className="client-info"><h3>{professor.nombre}</h3><p>{professor.email}</p></div><div style={{ display: 'flex', gap: '0.75rem' }}><button className="btn-primary" onClick={() => decide(professor.id, 'approve')}>Aprobar</button><button className="btn-danger" onClick={() => decide(professor.id, 'reject')}>Rechazar</button></div></div>)}</div>
       </main>
-
-      {/* Modal para Asignar Plan */}
-      {selectedClient && (
-        <AssignPlanForm 
-          client={selectedClient} 
-          onClose={() => setSelectedClient(null)} 
-        />
-      )}
     </div>
   );
 };
