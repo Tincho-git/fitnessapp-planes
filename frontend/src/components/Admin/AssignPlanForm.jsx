@@ -231,22 +231,23 @@ const AssignPlanForm = ({ client, onClose }) => {
             <div>
               <h2 style={{ marginBottom: '0.25rem' }}>Cliente: {client.nombre}</h2>
               <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-              <button
-                type="button"
-                className={`nav-btn ${activeModalTab === 'routine' ? 'active' : ''}`}
-                style={{ padding: '0.4rem 1rem', fontSize: '0.9rem' }}
-                onClick={() => setActiveModalTab('routine')}
-              >
-                📋 Rutina / Asignar
-              </button>
-              <button
-                type="button"
-                className={`nav-btn ${activeModalTab === 'progress' ? 'active' : ''}`}
-                style={{ padding: '0.4rem 1rem', fontSize: '0.9rem' }}
-                onClick={() => setActiveModalTab('progress')}
-              >
-                📈 Progreso del Cliente
-              </button>
+                <button
+                  type="button"
+                  className={`nav-btn ${activeModalTab === 'routine' ? 'active' : ''}`}
+                  style={{ padding: '0.4rem 1rem', fontSize: '0.9rem' }}
+                  onClick={() => setActiveModalTab('routine')}
+                >
+                  📋 Rutina / Asignar
+                </button>
+                <button
+                  type="button"
+                  className={`nav-btn ${activeModalTab === 'progress' ? 'active' : ''}`}
+                  style={{ padding: '0.4rem 1rem', fontSize: '0.9rem' }}
+                  onClick={() => setActiveModalTab('progress')}
+                >
+                  📈 Progreso del Cliente
+                </button>
+              </div>
             </div>
           </div>
           <button className="btn-close" onClick={onClose}>✖</button>
