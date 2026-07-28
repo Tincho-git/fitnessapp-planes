@@ -5,6 +5,7 @@ import com.cloudinary.utils.ObjectUtils;
 import com.fitnessapp.main.entity.Exercise;
 import com.fitnessapp.main.service.ExerciseService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,13 +27,17 @@ public class ExerciseController {
     }
 
     @GetMapping
-    public List<Exercise> getAllExercises() {
+    public List<Exercise> getAllExercises(Authentication authentication) {
+        if (authentication != null && authentication.getName() != null) {
+            return exerciseService.getExercisesByProfessorEmail(authentication.getName());
+        }
         return exerciseService.getAllExercises();
     }
 
     @PostMapping
-    public Exercise createExercise(@RequestBody Exercise exercise) {
-        return exerciseService.createExercise(exercise);
+    public Exercise createExercise(@RequestBody Exercise exercise, Authentication authentication) {
+        String email = authentication.getName();
+        return exerciseService.createExerciseForProfessor(exercise, email);
     }
 
     @PostMapping("/upload")
@@ -52,9 +57,10 @@ public class ExerciseController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Exercise> updateExercise(@PathVariable Long id, @RequestBody Exercise exercise) {
+    public ResponseEntity<Exercise> updateExercise(@PathVariable Long id, @RequestBody Exercise exercise, Authentication authentication) {
         try {
-            Exercise updated = exerciseService.updateExercise(id, exercise);
+            String email = authentication.getName();
+            Exercise updated = exerciseService.updateExerciseForProfessor(id, exercise, email);
             return ResponseEntity.ok(updated);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
@@ -62,9 +68,11 @@ public class ExerciseController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteExercise(@PathVariable Long id) {
-        exerciseService.deleteExercise(id);
+    public ResponseEntity<Void> deleteExercise(@PathVariable Long id, Authentication authentication) {
+        String email = authentication.getName();
+        exerciseService.deleteExerciseForProfessor(id, email);
         return ResponseEntity.noContent().build();
     }
 }
+
 

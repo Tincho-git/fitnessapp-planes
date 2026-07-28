@@ -22,4 +22,9 @@ public class Exercise {
     private String imagenUrl;
 
     private String videoUrl;
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    private User createdBy;
 }

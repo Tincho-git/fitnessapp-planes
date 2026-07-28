@@ -1,9 +1,11 @@
 package com.fitnessapp.main.service;
 
 import com.fitnessapp.main.entity.Exercise;
+import com.fitnessapp.main.entity.User;
 import com.fitnessapp.main.repository.ExerciseProgressRepository;
 import com.fitnessapp.main.repository.ExerciseRepository;
 import com.fitnessapp.main.repository.TrainingPlanRepository;
+import com.fitnessapp.main.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,13 +17,20 @@ public class ExerciseService {
     private final ExerciseRepository exerciseRepository;
     private final TrainingPlanRepository trainingPlanRepository;
     private final ExerciseProgressRepository exerciseProgressRepository;
+    private final UserRepository userRepository;
 
     public ExerciseService(ExerciseRepository exerciseRepository,
                            TrainingPlanRepository trainingPlanRepository,
-                           ExerciseProgressRepository exerciseProgressRepository) {
+                           ExerciseProgressRepository exerciseProgressRepository,
+                           UserRepository userRepository) {
         this.exerciseRepository = exerciseRepository;
         this.trainingPlanRepository = trainingPlanRepository;
         this.exerciseProgressRepository = exerciseProgressRepository;
+        this.userRepository = userRepository;
+    }
+
+    public List<Exercise> getExercisesByProfessorEmail(String email) {
+        return exerciseRepository.findByCreatedByEmail(email);
     }
 
     public List<Exercise> getAllExercises() {
@@ -32,30 +41,36 @@ public class ExerciseService {
         return exerciseRepository.findById(id);
     }
 
-    public Exercise createExercise(Exercise exercise) {
+    public Exercise createExerciseForProfessor(Exercise exercise, String email) {
+        User profesor = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Profesor no encontrado"));
+        exercise.setCreatedBy(profesor);
         return exerciseRepository.save(exercise);
     }
 
-    public Exercise updateExercise(Long id, Exercise exerciseDetails) {
-        return exerciseRepository.findById(id).map(exercise -> {
-            exercise.setNombre(exerciseDetails.getNombre());
-            exercise.setMusculo(exerciseDetails.getMusculo());
-            exercise.setDescripcion(exerciseDetails.getDescripcion());
-            if (exerciseDetails.getImagenUrl() != null) {
-                exercise.setImagenUrl(exerciseDetails.getImagenUrl());
-            }
-            if (exerciseDetails.getVideoUrl() != null) {
-                exercise.setVideoUrl(exerciseDetails.getVideoUrl());
-            }
-            return exerciseRepository.save(exercise);
-        }).orElseThrow(() -> new RuntimeException("Exercise no encontrado"));
+    public Exercise updateExerciseForProfessor(Long id, Exercise exerciseDetails, String email) {
+        Exercise exercise = exerciseRepository.findByIdAndCreatedByEmail(id, email)
+                .orElseGet(() -> exerciseRepository.findById(id)
+                        .orElseThrow(() -> new RuntimeException("Ejercicio no encontrado")));
+
+        exercise.setNombre(exerciseDetails.getNombre());
+        exercise.setMusculo(exerciseDetails.getMusculo());
+        exercise.setDescripcion(exerciseDetails.getDescripcion());
+        if (exerciseDetails.getImagenUrl() != null) {
+            exercise.setImagenUrl(exerciseDetails.getImagenUrl());
+        }
+        if (exerciseDetails.getVideoUrl() != null) {
+            exercise.setVideoUrl(exerciseDetails.getVideoUrl());
+        }
+        return exerciseRepository.save(exercise);
     }
 
     @Transactional
-    public void deleteExercise(Long id) {
+    public void deleteExerciseForProfessor(Long id, String email) {
         trainingPlanRepository.deleteByExerciseId(id);
         exerciseProgressRepository.deleteByExerciseId(id);
         exerciseRepository.deleteById(id);
     }
 }
+
 
