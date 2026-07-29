@@ -24,7 +24,7 @@ public class User {
     @Column(nullable = false)
     private String role = "CLIENT"; // ADMIN, PROFESOR o CLIENT
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "VARCHAR(255) DEFAULT 'ACTIVE'")
     private String status = "ACTIVE"; // PENDING, ACTIVE o REJECTED
 
     @com.fasterxml.jackson.annotation.JsonIgnore

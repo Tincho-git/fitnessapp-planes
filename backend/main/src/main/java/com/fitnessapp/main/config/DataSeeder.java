@@ -61,6 +61,7 @@ public class DataSeeder implements CommandLineRunner {
             client.setEmail(clientEmail);
             client.setPassword(passwordEncoder.encode("cliente123"));
             client.setRole("CLIENT");
+            client.setStatus("ACTIVE");
             userRepository.findByEmail(professorEmail).ifPresent(client::setProfesor);
             
             userRepository.save(client);
