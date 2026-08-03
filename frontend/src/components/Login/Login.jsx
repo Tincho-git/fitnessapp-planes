@@ -24,6 +24,7 @@ const Login = ({ onSwitchToRegister }) => {
   return (
     <div className="login-container">
       <div className="login-card">
+        <img src="/logo.png" alt="FitManage Pro" className="login-logo" />
         <h1 className="login-title">FitManage Pro</h1>
         <p className="login-subtitle">Ingresa tus datos de acceso</p>
         
@@ -69,7 +70,7 @@ const Login = ({ onSwitchToRegister }) => {
         </form>
 
         <div style={{ marginTop: '1.5rem' }}>
-          <button onClick={onSwitchToRegister} style={{ background: 'none', border: 'none', color: '#818cf8', cursor: 'pointer', textDecoration: 'underline' }}>
+          <button onClick={onSwitchToRegister} className="link-accent">
             ¿No tienes cuenta? Regístrate
           </button>
         </div>

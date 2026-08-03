@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../../utils/api';
+import { colors } from '../../theme';
 import ClientMetrics from './ClientMetrics';
 import './Client.css';
 
@@ -124,7 +125,7 @@ const ClientDashboard = () => {
         setSelectedExercise(null);
         fetchPlansAndProgress();
       }, 1200);
-    } catch (err) {
+      } catch {
       alert("Error al guardar progreso: " + err.message);
     } finally {
       setSubmittingProgress(false);
@@ -149,7 +150,7 @@ const ClientDashboard = () => {
         setNewProfessorEmail('');
         fetchPlansAndProgress();
       }
-    } catch (err) {
+    } catch {
       setProfError('Error de red al intentar cambiar de profesor.');
     }
   };
@@ -280,7 +281,7 @@ const ClientDashboard = () => {
           <div>
             <h2 className="client-title">Configuración de la Cuenta</h2>
             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '2rem', borderRadius: '16px', maxWidth: '600px' }}>
-              <h3 style={{ marginBottom: '1rem', color: '#818cf8' }}>Profesor Asignado</h3>
+              <h3 style={{ marginBottom: '1rem', color: colors.accent }}>Profesor Asignado</h3>
               <p style={{ color: '#cbd5e1', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
                 ¿Quieres cambiar de profesor? Ingresa su email a continuación:
               </p>
@@ -446,7 +447,7 @@ const ClientDashboard = () => {
                 href={videoModalData.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ color: '#818cf8', fontSize: '0.85rem', textDecoration: 'none' }}
+                style={{ color: colors.accent, fontSize: '0.85rem', textDecoration: 'none' }}
               >
                 🔗 Abrir video en pestaña nueva ↗
               </a>

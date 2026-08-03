@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiFetch } from '../../utils/api';
+import { colors } from '../../theme';
 import './ClientMetrics.css';
 
 const ClientMetrics = ({ plans }) => {
@@ -101,7 +102,7 @@ const ClientMetrics = ({ plans }) => {
         legend: { display: false },
         tooltip: {
           backgroundColor: '#1e293b',
-          titleColor: '#818cf8',
+          titleColor: colors.accent,
           bodyColor: '#f8fafc',
           borderColor: 'rgba(255,255,255,0.1)',
           borderWidth: 1
@@ -128,11 +129,11 @@ const ClientMetrics = ({ plans }) => {
           datasets: [{
             label: 'Peso (kg)',
             data: weights,
-            borderColor: '#818cf8',
-            backgroundColor: 'rgba(129, 140, 248, 0.15)',
+            borderColor: colors.accent,
+            backgroundColor: 'rgba(250, 204, 21, 0.15)',
             fill: true,
             tension: 0.35,
-            pointBackgroundColor: '#818cf8',
+            pointBackgroundColor: colors.accent,
             pointRadius: 5
           }]
         },

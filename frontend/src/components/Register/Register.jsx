@@ -58,7 +58,7 @@ const Register = ({ onSwitchToLogin }) => {
           ) : <p style={{ color: '#cbd5e1', fontSize: '0.9rem' }}>Tu cuenta quedará pendiente hasta que un administrador la apruebe.</p>}
           <button type="submit" className="btn btn-admin" disabled={loading} style={{ width: '100%', marginTop: '1rem' }}>{loading ? 'Registrando...' : 'Registrar'}</button>
         </form>
-        <div style={{ marginTop: '1.5rem' }}><button onClick={onSwitchToLogin} style={{ background: 'none', border: 'none', color: '#818cf8', cursor: 'pointer', textDecoration: 'underline' }}>¿Ya tienes cuenta? Inicia sesión</button></div>
+        <div style={{ marginTop: '1.5rem' }}><button onClick={onSwitchToLogin} className="link-accent">¿Ya tienes cuenta? Inicia sesión</button></div>
       </div>
     </div>
   );

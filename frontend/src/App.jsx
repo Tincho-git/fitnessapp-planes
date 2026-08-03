@@ -23,28 +23,11 @@ const MainRouter = () => {
   // el header si esta logeado
   return (
     <>
-      <header style={{ 
-        padding: '1rem 2rem', 
-        background: 'rgba(255,255,255,0.05)', 
-        display: 'flex', 
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        borderBottom: '1px solid rgba(255,255,255,0.1)'
-      }}>
-        <div style={{ fontWeight: '700', fontSize: '1.2rem', color: '#818cf8' }}>FitManage</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+      <header className="app-header">
+        <img src="/logo.png" alt="FitManage Pro" className="app-header-logo" />
+        <div className="app-header-actions">
           <span>Hola, {user.nombre || user.email}</span>
-          <button 
-            onClick={logout}
-            style={{
-              padding: '0.5rem 1rem',
-              background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.2)',
-              color: 'white',
-              borderRadius: '8px',
-              cursor: 'pointer'
-            }}
-          >
+          <button onClick={logout} className="btn-logout">
             Cerrar Sesión
           </button>
         </div>

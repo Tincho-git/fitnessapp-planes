@@ -1,26 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
-
-:root {
-  --primary-color: #4f46e5;
-  --primary-hover: #4338ca;
-  --secondary-color: #10b981;
-  --secondary-hover: #059669;
-  --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-  --card-bg: rgba(255, 255, 255, 0.05);
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-}
-
-body {
-  margin: 0;
-  font-family: 'Outfit', sans-serif;
-  background: var(--bg-gradient);
-  color: var(--text-main);
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
 .login-container {
   display: flex;
   justify-content: center;
@@ -33,7 +10,7 @@ body {
   background: var(--card-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--card-border);
   border-radius: 24px;
   padding: 3rem 2rem;
   width: 100%;
@@ -43,13 +20,23 @@ body {
   animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.login-logo {
+  display: block;
+  width: 112px;
+  height: 112px;
+  object-fit: contain;
+  margin: 0 auto 1.25rem;
+  border-radius: 20px;
+}
+
 .login-title {
   font-size: 2.5rem;
   font-weight: 700;
   margin: 0;
-  background: linear-gradient(to right, #818cf8, #c084fc);
+  background: linear-gradient(to right, var(--accent-color), var(--accent-light));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-clip: text;
   letter-spacing: -0.5px;
 }
 
@@ -58,12 +45,6 @@ body {
   margin-top: 0.5rem;
   margin-bottom: 2.5rem;
   font-size: 1.1rem;
-}
-
-.login-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
 }
 
 .btn {
@@ -79,31 +60,17 @@ body {
   justify-content: center;
   gap: 0.75rem;
   transition: all 0.2s ease;
-  color: white;
+  color: #0a0a0a;
 }
 
 .btn-admin {
-  background-color: var(--primary-color);
-  box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.39);
+  background-color: var(--accent-color);
+  box-shadow: 0 4px 14px 0 var(--accent-glow);
 }
 
 .btn-admin:hover {
-  background-color: var(--primary-hover);
+  background-color: var(--accent-hover);
   transform: translateY(-2px);
-}
-
-.btn-client {
-  background-color: var(--secondary-color);
-  box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.39);
-}
-
-.btn-client:hover {
-  background-color: var(--secondary-hover);
-  transform: translateY(-2px);
-}
-
-.icon {
-  font-size: 1.3rem;
 }
 
 @keyframes slideUp {

@@ -108,8 +108,8 @@ const ExerciseForm = ({
   nameVal, onNameChange,
   muscleVal, onMuscleChange,
   descVal, onDescChange,
-  imgFile, onImgFile, imgUrl, onImgUrl, imgMode, onImgMode,
-  vidFile, onVidFile, vidUrl, onVidUrl, vidMode, onVidMode,
+  onImgFile, imgUrl, onImgUrl, imgMode, onImgMode,
+  onVidFile, vidUrl, onVidUrl, vidMode, onVidMode,
   imgRef, vidRef,
   currentImagenUrl, currentVideoUrl, isEdit
 }) => {
@@ -451,13 +451,11 @@ const ExerciseManager = () => {
                 onMuscleChange={setMusculo}
                 descVal={descripcion}
                 onDescChange={setDescripcion}
-                imgFile={imageFile}
                 onImgFile={setImageFile}
                 imgUrl={imageUrl}
                 onImgUrl={setImageUrl}
                 imgMode={imageMode}
                 onImgMode={setImageMode}
-                vidFile={videoFile}
                 onVidFile={setVideoFile}
                 vidUrl={videoUrl}
                 onVidUrl={setVideoUrl}
@@ -496,13 +494,11 @@ const ExerciseManager = () => {
                 onMuscleChange={setEditMusculo}
                 descVal={editDescripcion}
                 onDescChange={setEditDescripcion}
-                imgFile={editImageFile}
                 onImgFile={setEditImageFile}
                 imgUrl={editImageUrl}
                 onImgUrl={setEditImageUrl}
                 imgMode={editImageMode}
                 onImgMode={setEditImageMode}
-                vidFile={editVideoFile}
                 onVidFile={setEditVideoFile}
                 vidUrl={editVideoUrl}
                 onVidUrl={setEditVideoUrl}

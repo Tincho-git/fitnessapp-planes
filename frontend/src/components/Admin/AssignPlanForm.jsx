@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiFetch } from '../../utils/api';
+import { colors } from '../../theme';
 
 const AssignPlanForm = ({ client, onClose }) => {
   const [activeModalTab, setActiveModalTab] = useState('routine'); // 'routine' or 'progress'
@@ -40,7 +41,7 @@ const AssignPlanForm = ({ client, onClose }) => {
 
       // Cargar el plan actual del cliente
       fetchClientPlan();
-    } catch (err) {
+    } catch {
       setError('Error al cargar los datos iniciales.');
     } finally {
       setLoading(false);
@@ -112,8 +113,8 @@ const AssignPlanForm = ({ client, onClose }) => {
             {
               label: 'Peso (kg)',
               data: weights,
-              borderColor: '#818cf8',
-              backgroundColor: 'rgba(129, 140, 248, 0.15)',
+              borderColor: colors.accent,
+              backgroundColor: 'rgba(250, 204, 21, 0.15)',
               yAxisID: 'yWeight',
               tension: 0.3
             },
@@ -133,7 +134,7 @@ const AssignPlanForm = ({ client, onClose }) => {
           plugins: {
             tooltip: {
               backgroundColor: '#1e293b',
-              titleColor: '#818cf8',
+              titleColor: colors.accent,
               bodyColor: '#f8fafc'
             }
           },
@@ -142,8 +143,8 @@ const AssignPlanForm = ({ client, onClose }) => {
             yWeight: {
               type: 'linear',
               position: 'left',
-              title: { display: true, text: 'Peso (kg)', color: '#818cf8' },
-              ticks: { color: '#818cf8' },
+              title: { display: true, text: 'Peso (kg)', color: colors.accent },
+              ticks: { color: colors.accent },
               grid: { color: 'rgba(255,255,255,0.05)' }
             },
             yReps: {
@@ -197,7 +198,7 @@ const AssignPlanForm = ({ client, onClose }) => {
     try {
       await apiFetch(`/api/training-plans/${planId}`, { method: 'DELETE' });
       fetchClientPlan();
-    } catch (err) {
+    } catch {
       setError('Error al eliminar el ejercicio del plan.');
     }
   };
@@ -224,7 +225,7 @@ const AssignPlanForm = ({ client, onClose }) => {
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <img
-              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(client.nombre)}&background=6366f1&color=fff&size=128&bold=true`}
+              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(client.nombre)}&background=FACC15&color=0a0a0a&size=128&bold=true`}
               alt={client.nombre}
               className="client-avatar-modal"
             />
@@ -337,7 +338,7 @@ const AssignPlanForm = ({ client, onClose }) => {
             ) : (
               <div>
                 {/* Resumen de Últimos Registros por Ejercicio */}
-                <h4 style={{ color: '#818cf8', marginBottom: '0.75rem' }}>Último Registro por Ejercicio</h4>
+                <h4 style={{ color: colors.accent, marginBottom: '0.75rem' }}>Último Registro por Ejercicio</h4>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
                   {latestLogs.map(log => {
                     const ex = log.exercise;
@@ -348,7 +349,7 @@ const AssignPlanForm = ({ client, onClose }) => {
                         onClick={() => setSelectedProgressExId(ex.id.toString())}
                         style={{
                           background: isSelected ? 'rgba(79, 70, 229, 0.25)' : 'rgba(255,255,255,0.05)',
-                          border: isSelected ? '1px solid #818cf8' : '1px solid rgba(255,255,255,0.1)',
+                          border: isSelected ? `1px solid ${colors.accent}` : '1px solid rgba(255,255,255,0.1)',
                           borderRadius: '12px',
                           padding: '1rem',
                           cursor: 'pointer',
@@ -384,7 +385,7 @@ const AssignPlanForm = ({ client, onClose }) => {
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                         <thead>
-                          <tr style={{ background: 'rgba(255,255,255,0.05)', color: '#818cf8' }}>
+                          <tr style={{ background: 'rgba(255,255,255,0.05)', color: colors.accent }}>
                             <th style={{ padding: '0.6rem', textAlign: 'left' }}>Fecha</th>
                             <th style={{ padding: '0.6rem', textAlign: 'left' }}>Peso (kg)</th>
                             <th style={{ padding: '0.6rem', textAlign: 'left' }}>Series</th>
