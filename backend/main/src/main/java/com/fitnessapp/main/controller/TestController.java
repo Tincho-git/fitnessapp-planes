@@ -8,7 +8,7 @@ public class TestController {
 
     @GetMapping("/")
     public String home() {
-        return "¡El backend de FitnessApp está funcionando correctamente! 🚀";
+        return "¡El backend de Fitnessapp planes está funcionando correctamente! 🚀";
     }
 
     @GetMapping("/api/ping")

@@ -24,8 +24,8 @@ const Login = ({ onSwitchToRegister }) => {
   return (
     <div className="login-container">
       <div className="login-card">
-        <img src="/logo.png" alt="FitManage Pro" className="login-logo" />
-        <h1 className="login-title">FitManage Pro</h1>
+        <img src="/logo.png" alt="Fitnessapp planes" className="login-logo" />
+        <h1 className="login-title">Fitnessapp planes</h1>
         <p className="login-subtitle">Ingresa tus datos de acceso</p>
         
         {error && <div style={{ color: '#ef4444', marginBottom: '1rem' }}>{error}</div>}

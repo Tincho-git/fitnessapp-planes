@@ -41,7 +41,7 @@ const Register = ({ onSwitchToLogin }) => {
     <div className="login-container">
       <div className="login-card" style={{ maxWidth: '400px' }}>
         <h1 className="login-title">Crear Cuenta</h1>
-        <p className="login-subtitle">Únete a FitManage Pro</p>
+        <p className="login-subtitle">Únete a Fitnessapp planes</p>
         {error && <div style={{ color: '#ef4444', marginBottom: '1rem' }}>{error}</div>}
         {success && <div style={{ color: '#10b981', marginBottom: '1rem' }}>{success}</div>}
         <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem' }}>

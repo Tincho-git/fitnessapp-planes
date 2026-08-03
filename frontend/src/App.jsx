@@ -24,7 +24,7 @@ const MainRouter = () => {
   return (
     <>
       <header className="app-header">
-        <img src="/logo.png" alt="FitManage Pro" className="app-header-logo" />
+        <img src="/logo.png" alt="Fitnessapp planes" className="app-header-logo" />
         <div className="app-header-actions">
           <span>Hola, {user.nombre || user.email}</span>
           <button onClick={logout} className="btn-logout">
