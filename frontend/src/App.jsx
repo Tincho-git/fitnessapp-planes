@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { LogOut, User } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { LogOut, User, Download } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { ToastProvider } from './context/ToastContext';
+import { ToastProvider, useToast } from './context/ToastContext';
 import Login from './components/Login/Login';
 import Register from './components/Register/Register';
 import DashboardAdmin from './components/Admin/DashboardAdmin';
@@ -17,7 +17,28 @@ const roleLabels = {
 // route principal
 const MainRouter = () => {
   const { user, logout } = useAuth();
+  const { toast } = useToast();
   const [authView, setAuthView] = useState('login');
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      toast.success('¡FitnessApp instalada en tu dispositivo!');
+      setDeferredPrompt(null);
+    }
+  };
 
   // si no esta logeado se muesta el login o registro
   if (!user) {
@@ -37,6 +58,22 @@ const MainRouter = () => {
           <span className="app-header-title">FitnessApp</span>
         </div>
         <div className="app-header-actions">
+          {deferredPrompt && (
+            <button
+              type="button"
+              onClick={handleInstallClick}
+              className="btn-logout"
+              style={{
+                borderColor: 'var(--accent-border)',
+                color: 'var(--accent-color)',
+                background: 'var(--accent-subtle)',
+              }}
+              title="Instalar aplicación en el dispositivo"
+            >
+              <Download size={16} />
+              <span>Instalar App</span>
+            </button>
+          )}
           <div className="user-pill">
             <User size={15} style={{ color: 'var(--accent-color)' }} />
             <span className="user-pill-name">{user.nombre || user.email}</span>
