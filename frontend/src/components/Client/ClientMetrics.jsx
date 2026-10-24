@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Dumbbell, Repeat, ClipboardList, Trophy, Flame } from 'lucide-react';
 import { apiFetch } from '../../utils/api';
 import { colors } from '../../theme';
 import './ClientMetrics.css';
@@ -15,7 +16,6 @@ const ClientMetrics = ({ plans }) => {
   const repsCanvasRef = useRef(null);
 
   useEffect(() => {
-    // Extract unique exercises from plans or progress history
     fetchInitialExercises();
   }, [plans]);
 
@@ -27,14 +27,13 @@ const ClientMetrics = ({ plans }) => {
         progressData = await res.json();
       }
 
-      // Build unique list of exercises from plans & progress
       const map = new Map();
       if (plans && Array.isArray(plans)) {
-        plans.forEach(p => {
+        plans.forEach((p) => {
           if (p.exercise) map.set(p.exercise.id, p.exercise);
         });
       }
-      progressData.forEach(p => {
+      progressData.forEach((p) => {
         if (p.exercise) map.set(p.exercise.id, p.exercise);
       });
 
@@ -45,7 +44,7 @@ const ClientMetrics = ({ plans }) => {
         setSelectedExerciseId(exList[0].id.toString());
       }
     } catch (err) {
-      console.error("Error al cargar lista de ejercicios para métricas", err);
+      console.error('Error al cargar lista de ejercicios para métricas', err);
     }
   };
 
@@ -64,7 +63,7 @@ const ClientMetrics = ({ plans }) => {
         setExerciseProgress(data);
       }
     } catch (err) {
-      console.error("Error al obtener progreso de ejercicio", err);
+      console.error('Error al obtener progreso de ejercicio', err);
     } finally {
       setLoading(false);
     }
@@ -83,18 +82,21 @@ const ClientMetrics = ({ plans }) => {
       return;
     }
 
-    const labels = exerciseProgress.map(p => {
+    const labels = exerciseProgress.map((p) => {
       const date = new Date(p.fecha);
-      return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
     });
-    const weights = exerciseProgress.map(p => p.pesoUsado);
-    const reps = exerciseProgress.map(p => p.repsRealizadas);
+    const weights = exerciseProgress.map((p) => p.pesoUsado);
+    const reps = exerciseProgress.map((p) => p.repsRealizadas);
 
-    // Destroy existing charts
     if (weightChartRef.current) weightChartRef.current.destroy();
     if (repsChartRef.current) repsChartRef.current.destroy();
 
-    // Chart Options
     const commonOptions = {
       responsive: true,
       maintainAspectRatio: false,
@@ -105,60 +107,62 @@ const ClientMetrics = ({ plans }) => {
           titleColor: colors.accent,
           bodyColor: '#f8fafc',
           borderColor: 'rgba(255,255,255,0.1)',
-          borderWidth: 1
-        }
+          borderWidth: 1,
+        },
       },
       scales: {
         x: {
           ticks: { color: '#94a3b8' },
-          grid: { color: 'rgba(255,255,255,0.05)' }
+          grid: { color: 'rgba(255,255,255,0.05)' },
         },
         y: {
           ticks: { color: '#94a3b8' },
-          grid: { color: 'rgba(255,255,255,0.05)' }
-        }
-      }
+          grid: { color: 'rgba(255,255,255,0.05)' },
+        },
+      },
     };
 
-    // Render Weight Chart
     if (weightCanvasRef.current) {
       weightChartRef.current = new window.Chart(weightCanvasRef.current, {
         type: 'line',
         data: {
           labels,
-          datasets: [{
-            label: 'Peso (kg)',
-            data: weights,
-            borderColor: colors.accent,
-            backgroundColor: 'rgba(250, 204, 21, 0.15)',
-            fill: true,
-            tension: 0.35,
-            pointBackgroundColor: colors.accent,
-            pointRadius: 5
-          }]
+          datasets: [
+            {
+              label: 'Peso (kg)',
+              data: weights,
+              borderColor: colors.accent,
+              backgroundColor: 'rgba(250, 204, 21, 0.15)',
+              fill: true,
+              tension: 0.35,
+              pointBackgroundColor: colors.accent,
+              pointRadius: 5,
+            },
+          ],
         },
-        options: commonOptions
+        options: commonOptions,
       });
     }
 
-    // Render Reps Chart
     if (repsCanvasRef.current) {
       repsChartRef.current = new window.Chart(repsCanvasRef.current, {
         type: 'line',
         data: {
           labels,
-          datasets: [{
-            label: 'Repeticiones',
-            data: reps,
-            borderColor: '#34d399',
-            backgroundColor: 'rgba(52, 211, 153, 0.15)',
-            fill: true,
-            tension: 0.35,
-            pointBackgroundColor: '#34d399',
-            pointRadius: 5
-          }]
+          datasets: [
+            {
+              label: 'Repeticiones',
+              data: reps,
+              borderColor: '#34d399',
+              backgroundColor: 'rgba(52, 211, 153, 0.15)',
+              fill: true,
+              tension: 0.35,
+              pointBackgroundColor: '#34d399',
+              pointRadius: 5,
+            },
+          ],
         },
-        options: commonOptions
+        options: commonOptions,
       });
     }
 
@@ -168,7 +172,12 @@ const ClientMetrics = ({ plans }) => {
     };
   }, [exerciseProgress]);
 
-  const selectedExercise = availableExercises.find(e => e.id.toString() === selectedExerciseId);
+  const selectedExercise = availableExercises.find((e) => e.id.toString() === selectedExerciseId);
+
+  const maxWeight =
+    exerciseProgress.length > 0
+      ? Math.max(...exerciseProgress.map((p) => p.pesoUsado || 0))
+      : 0;
 
   return (
     <div className="metrics-container">
@@ -180,8 +189,10 @@ const ClientMetrics = ({ plans }) => {
           value={selectedExerciseId}
           onChange={(e) => setSelectedExerciseId(e.target.value)}
         >
-          {availableExercises.length === 0 && <option value="">No hay ejercicios disponibles</option>}
-          {availableExercises.map(ex => (
+          {availableExercises.length === 0 && (
+            <option value="">No hay ejercicios disponibles</option>
+          )}
+          {availableExercises.map((ex) => (
             <option key={ex.id} value={ex.id}>
               {ex.nombre} ({ex.musculo})
             </option>
@@ -194,23 +205,62 @@ const ClientMetrics = ({ plans }) => {
       {!loading && exerciseProgress.length === 0 && (
         <div className="history-card">
           <p className="no-data-text">
-            {selectedExercise ? `No hay registros de progreso para ${selectedExercise.nombre}.` : 'Selecciona un ejercicio.'}
+            {selectedExercise
+              ? `No hay registros de progreso para ${selectedExercise.nombre}.`
+              : 'Selecciona un ejercicio.'}
           </p>
         </div>
       )}
 
       {!loading && exerciseProgress.length > 0 && (
         <>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: '1rem',
+              marginBottom: '1.5rem',
+            }}
+          >
+            <div className="chart-card" style={{ padding: '1.1rem 1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: 'var(--accent-color)' }}>
+                <Trophy size={18} />
+                <span style={{ fontSize: '0.82rem', fontWeight: 600, textTransform: 'uppercase' }}>
+                  Récord Personal (PR)
+                </span>
+              </div>
+              <div style={{ fontSize: '1.65rem', fontWeight: 800, marginTop: '0.35rem' }}>
+                {maxWeight} kg
+              </div>
+            </div>
+
+            <div className="chart-card" style={{ padding: '1.1rem 1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: '#34d399' }}>
+                <Flame size={18} />
+                <span style={{ fontSize: '0.82rem', fontWeight: 600, textTransform: 'uppercase' }}>
+                  Sesiones Registradas
+                </span>
+              </div>
+              <div style={{ fontSize: '1.65rem', fontWeight: 800, marginTop: '0.35rem' }}>
+                {exerciseProgress.length}
+              </div>
+            </div>
+          </div>
+
           <div className="charts-grid">
             <div className="chart-card">
-              <h4>🏋️ Progreso de Carga (kg)</h4>
+              <h4>
+                <Dumbbell size={18} /> Progreso de Carga (kg)
+              </h4>
               <div className="chart-wrapper">
                 <canvas ref={weightCanvasRef}></canvas>
               </div>
             </div>
 
             <div className="chart-card">
-              <h4>🔄 Progreso de Repeticiones</h4>
+              <h4>
+                <Repeat size={18} /> Progreso de Repeticiones
+              </h4>
               <div className="chart-wrapper">
                 <canvas ref={repsCanvasRef}></canvas>
               </div>
@@ -218,7 +268,10 @@ const ClientMetrics = ({ plans }) => {
           </div>
 
           <div className="history-card">
-            <h4>📋 Historial de Registros</h4>
+            <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <ClipboardList size={19} style={{ color: 'var(--accent-color)' }} />
+              Historial de Registros
+            </h4>
             <div className="history-table-wrapper">
               <table className="history-table">
                 <thead>
@@ -231,15 +284,20 @@ const ClientMetrics = ({ plans }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {exerciseProgress.slice().reverse().map((item) => (
-                    <tr key={item.id}>
-                      <td>{new Date(item.fecha).toLocaleString('es-ES')}</td>
-                      <td><strong>{item.pesoUsado} kg</strong></td>
-                      <td>{item.setsRealizados}</td>
-                      <td>{item.repsRealizadas}</td>
-                      <td>{item.notas || '—'}</td>
-                    </tr>
-                  ))}
+                  {exerciseProgress
+                    .slice()
+                    .reverse()
+                    .map((item) => (
+                      <tr key={item.id}>
+                        <td>{new Date(item.fecha).toLocaleString('es-ES')}</td>
+                        <td>
+                          <strong>{item.pesoUsado} kg</strong>
+                        </td>
+                        <td>{item.setsRealizados}</td>
+                        <td>{item.repsRealizadas}</td>
+                        <td>{item.notas || '—'}</td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>

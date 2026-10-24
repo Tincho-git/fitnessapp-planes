@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
+import { Mail, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import './Login.css';
 
 const Login = ({ onSwitchToRegister }) => {
   const { login } = useAuth();
+  const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -16,7 +20,11 @@ const Login = ({ onSwitchToRegister }) => {
 
     const success = await login(email, password);
     if (!success) {
-      setError('Credenciales incorrectas. Por favor, intenta de nuevo.');
+      const msg = 'Credenciales incorrectas. Por favor, intenta de nuevo.';
+      setError(msg);
+      toast.error(msg);
+    } else {
+      toast.success('¡Bienvenido de nuevo!');
     }
     setLoading(false);
   };
@@ -25,53 +33,64 @@ const Login = ({ onSwitchToRegister }) => {
     <div className="login-container">
       <div className="login-card">
         <img src="/logo.png" alt="Fitnessapp planes" className="login-logo" />
-        <h1 className="login-title">Fitnessapp planes</h1>
-        <p className="login-subtitle">Ingresa tus datos de acceso</p>
-        
-        {error && <div style={{ color: '#ef4444', marginBottom: '1rem' }}>{error}</div>}
+        <h1 className="login-title">FitnessApp</h1>
+        <p className="login-subtitle">Ingresa tus datos para continuar tu entrenamiento</p>
+
+        {error && <div className="error-alert" style={{ justifyContent: 'center' }}>{error}</div>}
 
         <form onSubmit={handleSubmit} className="login-form">
-          <div style={{ marginBottom: '1rem', textAlign: 'left' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1' }}>Email</label>
-            <input 
-              type="email" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={{
-                width: '100%', padding: '0.75rem', borderRadius: '8px', 
-                border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.2)', color: 'white'
-              }}
-            />
-          </div>
-          
-          <div style={{ marginBottom: '2rem', textAlign: 'left' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1' }}>Contraseña</label>
-            <input 
-              type="password" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              style={{
-                width: '100%', padding: '0.75rem', borderRadius: '8px', 
-                border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.2)', color: 'white'
-              }}
-            />
+          <div className="auth-field">
+            <label>Correo electrónico</label>
+            <div className="auth-input-wrap">
+              <Mail size={18} className="auth-input-icon" />
+              <input
+                type="email"
+                className="auth-input"
+                placeholder="tu@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
           </div>
 
-          <button 
-            type="submit" 
-            className="btn btn-admin" 
+          <div className="auth-field" style={{ marginBottom: '1.75rem' }}>
+            <label>Contraseña</label>
+            <div className="auth-input-wrap">
+              <Lock size={18} className="auth-input-icon" />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                className="auth-input"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                className="auth-eye-btn"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            className="btn btn-admin"
             disabled={loading}
             style={{ width: '100%' }}
           >
+            <LogIn size={19} />
             {loading ? 'Ingresando...' : 'Iniciar Sesión'}
           </button>
         </form>
 
         <div style={{ marginTop: '1.5rem' }}>
           <button onClick={onSwitchToRegister} className="link-accent">
-            ¿No tienes cuenta? Regístrate
+            ¿No tienes cuenta? Regístrate gratis
           </button>
         </div>
       </div>

@@ -3,37 +3,39 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  padding: 1rem;
+  padding: 1.25rem;
 }
 
 .login-card {
   background: var(--card-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--card-border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--card-border-strong);
   border-radius: 24px;
-  padding: 3rem 2rem;
+  padding: 2.5rem 2rem;
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
   text-align: center;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-  animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+  animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .login-logo {
   display: block;
-  width: 112px;
-  height: 112px;
+  width: 92px;
+  height: 92px;
   object-fit: contain;
-  margin: 0 auto 1.25rem;
+  margin: 0 auto 1rem;
   border-radius: 20px;
+  border: 1px solid rgba(250, 204, 21, 0.25);
+  box-shadow: 0 8px 24px rgba(250, 204, 21, 0.15);
 }
 
 .login-title {
-  font-size: 2.5rem;
-  font-weight: 700;
+  font-size: 2.15rem;
+  font-weight: 800;
   margin: 0;
-  background: linear-gradient(to right, var(--accent-color), var(--accent-light));
+  background: linear-gradient(to right, #ffffff, var(--accent-color));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -42,35 +44,133 @@
 
 .login-subtitle {
   color: var(--text-muted);
-  margin-top: 0.5rem;
-  margin-bottom: 2.5rem;
-  font-size: 1.1rem;
+  margin-top: 0.35rem;
+  margin-bottom: 1.85rem;
+  font-size: 0.98rem;
+}
+
+.auth-field {
+  margin-bottom: 1.15rem;
+  text-align: left;
+}
+
+.auth-field label {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.auth-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.auth-input-icon {
+  position: absolute;
+  left: 0.9rem;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.auth-input {
+  width: 100%;
+  padding: 0.8rem 2.6rem 0.8rem 2.65rem;
+  border-radius: 12px;
+  border: 1px solid var(--card-border-strong);
+  background: rgba(0, 0, 0, 0.35);
+  color: white;
+  font-family: inherit;
+  font-size: 0.96rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.auth-input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.12);
+}
+
+.auth-eye-btn {
+  position: absolute;
+  right: 0.75rem;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0.25rem;
+}
+.auth-eye-btn:hover {
+  color: white;
+}
+
+.role-switch-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+  margin-bottom: 1.4rem;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 0.35rem;
+  border-radius: 14px;
+  border: 1px solid var(--card-border);
+}
+
+.role-switch-btn {
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  transition: all 0.2s;
+}
+
+.role-switch-btn.active {
+  background: var(--accent-color);
+  color: #09090b;
+  box-shadow: 0 4px 12px rgba(250, 204, 21, 0.25);
 }
 
 .btn {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.1rem;
-  font-weight: 600;
-  padding: 1rem;
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 0.9rem 1.2rem;
   border: none;
   border-radius: 12px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
   transition: all 0.2s ease;
-  color: #0a0a0a;
+  color: #09090b;
 }
 
 .btn-admin {
-  background-color: var(--accent-color);
+  background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-hover) 100%);
   box-shadow: 0 4px 14px 0 var(--accent-glow);
 }
 
-.btn-admin:hover {
-  background-color: var(--accent-hover);
+.btn-admin:hover:not(:disabled) {
   transform: translateY(-2px);
+  box-shadow: 0 6px 20px 0 var(--accent-glow);
+}
+
+.btn-admin:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 @keyframes slideUp {

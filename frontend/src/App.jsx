@@ -1,10 +1,18 @@
 import React, { useState } from 'react';
+import { LogOut, User } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
 import Login from './components/Login/Login';
 import Register from './components/Register/Register';
 import DashboardAdmin from './components/Admin/DashboardAdmin';
 import DashboardProfessor from './components/Professor/DashboardProfessor';
 import ClientDashboard from './components/Client/ClientDashboard';
+
+const roleLabels = {
+  ADMIN: 'Admin',
+  PROFESOR: 'Profesor',
+  CLIENT: 'Atleta',
+};
 
 // route principal
 const MainRouter = () => {
@@ -24,15 +32,25 @@ const MainRouter = () => {
   return (
     <>
       <header className="app-header">
-        <img src="/logo.png" alt="Fitnessapp planes" className="app-header-logo" />
+        <div className="app-header-brand">
+          <img src="/logo.png" alt="Fitnessapp planes" className="app-header-logo" />
+          <span className="app-header-title">FitnessApp</span>
+        </div>
         <div className="app-header-actions">
-          <span>Hola, {user.nombre || user.email}</span>
-          <button onClick={logout} className="btn-logout">
-            Cerrar Sesión
+          <div className="user-pill">
+            <User size={15} style={{ color: 'var(--accent-color)' }} />
+            <span className="user-pill-name">{user.nombre || user.email}</span>
+            {user.role && (
+              <span className="user-pill-role">{roleLabels[user.role] || user.role}</span>
+            )}
+          </div>
+          <button onClick={logout} className="btn-logout" title="Cerrar Sesión">
+            <LogOut size={16} />
+            <span>Salir</span>
           </button>
         </div>
       </header>
-      
+
       <main>
         {user.role === 'ADMIN' && <DashboardAdmin />}
         {user.role === 'PROFESOR' && <DashboardProfessor />}
@@ -45,7 +63,9 @@ const MainRouter = () => {
 function App() {
   return (
     <AuthProvider>
-      <MainRouter />
+      <ToastProvider>
+        <MainRouter />
+      </ToastProvider>
     </AuthProvider>
   );
 }
