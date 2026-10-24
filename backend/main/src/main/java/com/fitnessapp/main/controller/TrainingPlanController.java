@@ -37,6 +37,14 @@ public class TrainingPlanController {
         return ResponseEntity.ok(created);
     }
 
+    // Actualizar una entrada del plan de un cliente
+    @PutMapping("/training-plans/{id}")
+    @PreAuthorize("hasRole('PROFESOR')")
+    public ResponseEntity<TrainingPlan> updatePlan(@PathVariable Long id, @RequestBody TrainingPlanRequest request, org.springframework.security.core.Authentication authentication) {
+        TrainingPlan updated = trainingPlanService.updateTrainingPlan(id, request, authentication.getName());
+        return ResponseEntity.ok(updated);
+    }
+
     // Eliminar una entrada del plan
     @DeleteMapping("/training-plans/{id}")
     @PreAuthorize("hasRole('PROFESOR')")

@@ -20,11 +20,20 @@ public class TrainingPlan {
     @JoinColumn(name = "exercise_id", nullable = false)
     private Exercise exercise;
 
+    @Column(name = "dia")
+    private String dia = "Día 1";
+
+    @Column(name = "orden")
+    private Integer orden = 1;
+
     private Integer sets;
     private Integer reps;
-    
+
     @Column(name = "peso_sugerido")
     private Double pesoSugerido;
+
+    @Column(name = "descanso_segundos")
+    private Integer descansoSegundos = 90;
 
     @Column(name = "notas_extras")
     private String notasExtras;

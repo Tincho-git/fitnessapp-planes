@@ -40,6 +40,7 @@ public class ExerciseProgressService {
         progress.setPesoUsado(request.getPesoUsado());
         progress.setRepsRealizadas(request.getRepsRealizadas());
         progress.setSetsRealizados(request.getSetsRealizados());
+        progress.setDetalleSeries(request.getDetalleSeries());
         progress.setNotas(request.getNotas());
         progress.setFecha(LocalDateTime.now());
 

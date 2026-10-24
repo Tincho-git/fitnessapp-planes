@@ -18,8 +18,8 @@ public class TrainingPlanService {
     private final UserRepository userRepository;
     private final ExerciseRepository exerciseRepository;
 
-    public TrainingPlanService(TrainingPlanRepository trainingPlanRepository, 
-                               UserRepository userRepository, 
+    public TrainingPlanService(TrainingPlanRepository trainingPlanRepository,
+                               UserRepository userRepository,
                                ExerciseRepository exerciseRepository) {
         this.trainingPlanRepository = trainingPlanRepository;
         this.userRepository = userRepository;
@@ -30,16 +30,50 @@ public class TrainingPlanService {
         User client = userRepository.findById(request.getClientId())
                 .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
         verifyProfessorOwnsClient(client, professorEmail);
-                
+
         Exercise exercise = exerciseRepository.findById(request.getExerciseId())
                 .orElseThrow(() -> new RuntimeException("Ejercicio no encontrado"));
 
         TrainingPlan plan = new TrainingPlan();
         plan.setUser(client);
         plan.setExercise(exercise);
+        plan.setDia(request.getDia() != null && !request.getDia().trim().isEmpty() ? request.getDia().trim() : "Día 1");
+        plan.setOrden(request.getOrden() != null ? request.getOrden() : 1);
         plan.setSets(request.getSets());
         plan.setReps(request.getReps());
         plan.setPesoSugerido(request.getPesoSugerido());
+        plan.setDescansoSegundos(request.getDescansoSegundos() != null ? request.getDescansoSegundos() : 90);
+        plan.setNotasExtras(request.getNotasExtras());
+
+        return trainingPlanRepository.save(plan);
+    }
+
+    public TrainingPlan updateTrainingPlan(Long id, TrainingPlanRequest request, String professorEmail) {
+        TrainingPlan plan = trainingPlanRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Plan no encontrado"));
+        verifyProfessorOwnsClient(plan.getUser(), professorEmail);
+
+        if (request.getExerciseId() != null) {
+            Exercise exercise = exerciseRepository.findById(request.getExerciseId())
+                    .orElseThrow(() -> new RuntimeException("Ejercicio no encontrado"));
+            plan.setExercise(exercise);
+        }
+        if (request.getDia() != null && !request.getDia().trim().isEmpty()) {
+            plan.setDia(request.getDia().trim());
+        }
+        if (request.getOrden() != null) {
+            plan.setOrden(request.getOrden());
+        }
+        if (request.getSets() != null) {
+            plan.setSets(request.getSets());
+        }
+        if (request.getReps() != null) {
+            plan.setReps(request.getReps());
+        }
+        plan.setPesoSugerido(request.getPesoSugerido());
+        if (request.getDescansoSegundos() != null) {
+            plan.setDescansoSegundos(request.getDescansoSegundos());
+        }
         plan.setNotasExtras(request.getNotasExtras());
 
         return trainingPlanRepository.save(plan);

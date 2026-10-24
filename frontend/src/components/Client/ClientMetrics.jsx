@@ -277,9 +277,9 @@ const ClientMetrics = ({ plans }) => {
                 <thead>
                   <tr>
                     <th>Fecha</th>
-                    <th>Peso (kg)</th>
-                    <th>Series</th>
-                    <th>Repeticiones</th>
+                    <th>Peso Máx</th>
+                    <th>Series × Reps</th>
+                    <th>Detalle Serie por Serie</th>
                     <th>Notas</th>
                   </tr>
                 </thead>
@@ -293,8 +293,12 @@ const ClientMetrics = ({ plans }) => {
                         <td>
                           <strong>{item.pesoUsado} kg</strong>
                         </td>
-                        <td>{item.setsRealizados}</td>
-                        <td>{item.repsRealizadas}</td>
+                        <td>
+                          {item.setsRealizados} × {item.repsRealizadas}
+                        </td>
+                        <td style={{ color: 'var(--accent-light)', fontSize: '0.84rem' }}>
+                          {item.detalleSeries || '—'}
+                        </td>
                         <td>{item.notas || '—'}</td>
                       </tr>
                     ))}

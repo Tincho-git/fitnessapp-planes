@@ -8,5 +8,6 @@ public class ExerciseProgressRequest {
     private double pesoUsado;
     private int repsRealizadas;
     private int setsRealizados;
+    private String detalleSeries;
     private String notas;
 }

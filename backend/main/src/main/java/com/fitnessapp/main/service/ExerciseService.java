@@ -4,6 +4,7 @@ import com.fitnessapp.main.entity.Exercise;
 import com.fitnessapp.main.entity.User;
 import com.fitnessapp.main.repository.ExerciseProgressRepository;
 import com.fitnessapp.main.repository.ExerciseRepository;
+import com.fitnessapp.main.repository.RoutineTemplateItemRepository;
 import com.fitnessapp.main.repository.TrainingPlanRepository;
 import com.fitnessapp.main.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -17,15 +18,18 @@ public class ExerciseService {
     private final ExerciseRepository exerciseRepository;
     private final TrainingPlanRepository trainingPlanRepository;
     private final ExerciseProgressRepository exerciseProgressRepository;
+    private final RoutineTemplateItemRepository routineTemplateItemRepository;
     private final UserRepository userRepository;
 
     public ExerciseService(ExerciseRepository exerciseRepository,
                            TrainingPlanRepository trainingPlanRepository,
                            ExerciseProgressRepository exerciseProgressRepository,
+                           RoutineTemplateItemRepository routineTemplateItemRepository,
                            UserRepository userRepository) {
         this.exerciseRepository = exerciseRepository;
         this.trainingPlanRepository = trainingPlanRepository;
         this.exerciseProgressRepository = exerciseProgressRepository;
+        this.routineTemplateItemRepository = routineTemplateItemRepository;
         this.userRepository = userRepository;
     }
 
@@ -68,10 +72,9 @@ public class ExerciseService {
     public void deleteExerciseForProfessor(Long id, String email) {
         exerciseRepository.findByIdAndCreatedByEmail(id, email)
                 .orElseThrow(() -> new org.springframework.security.access.AccessDeniedException("No tiene permisos para eliminar este ejercicio"));
+        routineTemplateItemRepository.deleteByExerciseId(id);
         trainingPlanRepository.deleteByExerciseId(id);
         exerciseProgressRepository.deleteByExerciseId(id);
         exerciseRepository.deleteById(id);
     }
 }
-
-

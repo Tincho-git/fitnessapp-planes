@@ -30,6 +30,9 @@ public class ExerciseProgress {
     @Column(nullable = false)
     private int setsRealizados;
 
+    @Column(name = "detalle_series", length = 1000)
+    private String detalleSeries;
+
     private String notas;
 
     @Column(nullable = false)

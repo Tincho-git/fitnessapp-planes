@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Users, Dumbbell, RefreshCw, Search, X, Mail, ClipboardList } from 'lucide-react';
+import { Users, Dumbbell, Layers, RefreshCw, Search, X, Mail, ClipboardList } from 'lucide-react';
 import { apiFetch } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
 import ExerciseManager from '../Admin/ExerciseManager';
+import TemplateManager from '../Admin/TemplateManager';
 import AssignPlanForm from '../Admin/AssignPlanForm';
 import '../Admin/Admin.css';
 
@@ -31,8 +32,8 @@ const DashboardProfessor = () => {
   };
 
   useEffect(() => {
-    if (activeTab === 'clients') fetchClients();
-  }, [activeTab]);
+    fetchClients();
+  }, []);
 
   const filteredClients = useMemo(() => {
     if (!searchQuery.trim()) return clients;
@@ -57,6 +58,13 @@ const DashboardProfessor = () => {
             <span>Mis Clientes</span>
           </button>
           <button
+            className={`nav-btn ${activeTab === 'templates' ? 'active' : ''}`}
+            onClick={() => setActiveTab('templates')}
+          >
+            <Layers size={19} />
+            <span>Plantillas</span>
+          </button>
+          <button
             className={`nav-btn ${activeTab === 'exercises' ? 'active' : ''}`}
             onClick={() => setActiveTab('exercises')}
           >
@@ -78,7 +86,7 @@ const DashboardProfessor = () => {
                   Mis Clientes
                   {clients.length > 0 && <span className="count-pill">{clients.length}</span>}
                 </h2>
-                <p className="section-subtitle">Gestiona las rutinas y supervisa el progreso de tus atletas.</p>
+                <p className="section-subtitle">Gestiona las rutinas por días y supervisa el progreso de tus atletas.</p>
               </div>
               <button className="btn-refresh" onClick={fetchClients} disabled={loading}>
                 <RefreshCw size={16} className={loading ? 'spin-icon' : ''} />
@@ -155,6 +163,7 @@ const DashboardProfessor = () => {
           </div>
         )}
 
+        {activeTab === 'templates' && <TemplateManager clients={clients} />}
         {activeTab === 'exercises' && <ExerciseManager />}
       </main>
 

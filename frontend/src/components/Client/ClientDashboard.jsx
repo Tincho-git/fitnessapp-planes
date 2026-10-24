@@ -15,12 +15,56 @@ import {
   UserCheck,
   MessageSquare,
   Save,
+  Calendar,
+  Clock,
+  Check,
+  Plus,
+  Trash2,
+  Play,
+  Pause,
+  RotateCcw,
+  Timer,
 } from 'lucide-react';
 import { apiFetch } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
 import { colors } from '../../theme';
 import ClientMetrics from './ClientMetrics';
 import './Client.css';
+
+// Sonido acústico suave generado con Web Audio API al finalizar el descanso
+const playTimerBeep = () => {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const playTone = (freq, start, duration) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+      gain.gain.setValueAtTime(0.18, ctx.currentTime + start);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + start);
+      osc.stop(ctx.currentTime + start + duration);
+    };
+    playTone(880, 0, 0.18);
+    playTone(880, 0.22, 0.18);
+    playTone(1174.66, 0.45, 0.35);
+    if (navigator.vibrate) {
+      navigator.vibrate([200, 100, 250]);
+    }
+  } catch {
+    // Ignorar si el navegador bloquea el audio
+  }
+};
+
+const formatSeconds = (sec) => {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+};
 
 const getEmbedVideoUrl = (url) => {
   if (!url) return null;
@@ -47,7 +91,8 @@ const ClientDashboard = () => {
   const [todayProgress, setTodayProgress] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Filters for Routine
+  // Day/Session & Filters for Routine
+  const [selectedDay, setSelectedDay] = useState('Todos');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMuscle, setSelectedMuscle] = useState('Todos');
 
@@ -56,20 +101,54 @@ const ClientDashboard = () => {
   const [profError, setProfError] = useState('');
   const [profSuccess, setProfSuccess] = useState('');
 
-  // Modal State for Progress Registration
-  const [selectedExercise, setSelectedExercise] = useState(null);
-  const [pesoUsado, setPesoUsado] = useState('');
-  const [repsRealizadas, setRepsRealizadas] = useState('');
-  const [setsRealizados, setSetsRealizados] = useState('');
+  // Modal State for Set-by-Set Progress Registration
+  const [selectedPlanItem, setSelectedPlanItem] = useState(null);
+  const [setRows, setSetRows] = useState([]); // [{ weight, reps, completed }]
   const [notas, setNotas] = useState('');
   const [submittingProgress, setSubmittingProgress] = useState(false);
 
+  // Rest Timer State
+  const [restDuration, setRestDuration] = useState(90);
+  const [restRemaining, setRestRemaining] = useState(0);
+  const [restRunning, setRestRunning] = useState(false);
+
   // Modal State for Video Player
-  const [videoModalData, setVideoModalData] = useState(null); // { url, title }
+  const [videoModalData, setVideoModalData] = useState(null);
 
   useEffect(() => {
     fetchPlansAndProgress();
   }, []);
+
+  // Countdown Interval for Rest Timer
+  useEffect(() => {
+    if (!restRunning || restRemaining <= 0) return;
+
+    const timer = setInterval(() => {
+      setRestRemaining((prev) => {
+        if (prev <= 1) {
+          setRestRunning(false);
+          playTimerBeep();
+          toast.info('⏱️ ¡Descanso terminado! A darle a la siguiente serie 💪');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [restRunning, restRemaining]);
+
+  const startRestTimer = (seconds) => {
+    const sec = seconds || restDuration || 90;
+    setRestDuration(sec);
+    setRestRemaining(sec);
+    setRestRunning(true);
+  };
+
+  const adjustRestTimer = (delta) => {
+    setRestRemaining((prev) => Math.max(0, prev + delta));
+    setRestDuration((prev) => Math.max(15, prev + delta));
+  };
 
   const fetchPlansAndProgress = async () => {
     setLoading(true);
@@ -78,6 +157,11 @@ const ClientDashboard = () => {
       if (planRes.ok) {
         const planData = await planRes.json();
         setPlans(planData);
+        // Si hay más de un día, seleccionar el primer día por defecto en la primera carga
+        const uniqueDays = Array.from(new Set(planData.map((p) => p.dia || 'Día 1')));
+        if (uniqueDays.length > 0 && selectedDay === 'Todos') {
+          setSelectedDay(uniqueDays[0]);
+        }
       }
 
       const progressRes = await apiFetch('/api/progress/mine');
@@ -105,17 +189,31 @@ const ClientDashboard = () => {
     });
   };
 
-  // Muscle groups available in the client's assigned routine
+  // Unique days in the client's routine
+  const routineDays = useMemo(() => {
+    const set = new Set();
+    plans.forEach((p) => set.add(p.dia || 'Día 1'));
+    const list = Array.from(set);
+    return list.length > 1 ? [...list, 'Todos'] : list;
+  }, [plans]);
+
+  //Plans in the currently selected day
+  const dayPlans = useMemo(() => {
+    if (selectedDay === 'Todos' || routineDays.length <= 1) return plans;
+    return plans.filter((p) => (p.dia || 'Día 1') === selectedDay);
+  }, [plans, selectedDay, routineDays]);
+
+  // Muscle groups available in the active day
   const routineMuscles = useMemo(() => {
     const set = new Set();
-    plans.forEach((p) => {
+    dayPlans.forEach((p) => {
       if (p.exercise?.musculo) set.add(p.exercise.musculo);
     });
     return ['Todos', ...Array.from(set)];
-  }, [plans]);
+  }, [dayPlans]);
 
   const filteredPlans = useMemo(() => {
-    return plans.filter((p) => {
+    return dayPlans.filter((p) => {
       const ex = p.exercise;
       if (!ex) return false;
       const matchesMuscle = selectedMuscle === 'Todos' || ex.musculo === selectedMuscle;
@@ -127,23 +225,69 @@ const ClientDashboard = () => {
         (p.notasExtras && p.notasExtras.toLowerCase().includes(q));
       return matchesMuscle && matchesSearch;
     });
-  }, [plans, selectedMuscle, searchQuery]);
+  }, [dayPlans, selectedMuscle, searchQuery]);
 
-  // Daily progress calculation
-  const completedTodayCount = useMemo(() => {
-    if (!plans.length) return 0;
-    return plans.filter((p) => p.exercise && isLoggedToday(p.exercise.id)).length;
-  }, [plans, todayProgress]);
+  // Progress calculation for the selected day
+  const completedInDayCount = useMemo(() => {
+    if (!dayPlans.length) return 0;
+    return dayPlans.filter((p) => p.exercise && isLoggedToday(p.exercise.id)).length;
+  }, [dayPlans, todayProgress]);
 
-  const progressPercentage = plans.length > 0 ? Math.round((completedTodayCount / plans.length) * 100) : 0;
+  const progressPercentage =
+    dayPlans.length > 0 ? Math.round((completedInDayCount / dayPlans.length) * 100) : 0;
 
   const openProgressModal = (planItem) => {
-    const exercise = planItem.exercise;
-    setSelectedExercise(exercise);
-    setPesoUsado(planItem.pesoSugerido ? planItem.pesoSugerido.toString() : '');
-    setRepsRealizadas(planItem.reps ? planItem.reps.toString() : '');
-    setSetsRealizados(planItem.sets ? planItem.sets.toString() : '');
+    setSelectedPlanItem(planItem);
+    const totalSets = Math.max(1, planItem.sets || 3);
+    const defaultWeight = planItem.pesoSugerido ? planItem.pesoSugerido.toString() : '';
+    const defaultReps = planItem.reps ? planItem.reps.toString() : '10';
+    const initialRows = Array.from({ length: totalSets }, (_, idx) => ({
+      weight: defaultWeight,
+      reps: defaultReps,
+      completed: idx === 0, // primera serie lista para marcar o ya marcada
+    }));
+    // Dejamos todas desmarcadas al abrir para que al tocar ✓ dispare el temporizador de descanso
+    setSetRows(
+      initialRows.map((r) => ({
+        ...r,
+        completed: false,
+      }))
+    );
+    const restSec = planItem.descansoSegundos || 90;
+    setRestDuration(restSec);
     setNotas('');
+  };
+
+  const handleSetRowChange = (index, field, value) => {
+    setSetRows((prev) =>
+      prev.map((row, i) => (i === index ? { ...row, [field]: value } : row))
+    );
+  };
+
+  const handleToggleSetCompleted = (index) => {
+    setSetRows((prev) => {
+      const next = prev.map((row, i) =>
+        i === index ? { ...row, completed: !row.completed } : row
+      );
+      // Si se acaba de marcar como completada, iniciamos el Temporizador de Descanso automáticamente
+      if (!prev[index].completed) {
+        const restSec = selectedPlanItem?.descansoSegundos || restDuration || 90;
+        startRestTimer(restSec);
+      }
+      return next;
+    });
+  };
+
+  const handleAddSetRow = () => {
+    setSetRows((prev) => {
+      const last = prev[prev.length - 1] || { weight: '', reps: '10' };
+      return [...prev, { weight: last.weight, reps: last.reps, completed: false }];
+    });
+  };
+
+  const handleRemoveSetRow = (index) => {
+    if (setRows.length <= 1) return;
+    setSetRows((prev) => prev.filter((_, i) => i !== index));
   };
 
   const openVideoModal = (e, videoUrl, exerciseName) => {
@@ -153,25 +297,47 @@ const ClientDashboard = () => {
 
   const handleProgressSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedExercise) return;
+    if (!selectedPlanItem || !selectedPlanItem.exercise) return;
+
+    // Usamos las series marcadas como completadas; si no marcó ninguna con el check, usamos todas las filas cargadas
+    const activeRows = setRows.filter((r) => r.completed);
+    const rowsToProcess = activeRows.length > 0 ? activeRows : setRows;
+
+    const maxWeight = Math.max(
+      0,
+      ...rowsToProcess.map((r) => parseFloat(r.weight) || 0)
+    );
+    const avgReps = Math.max(
+      1,
+      Math.round(
+        rowsToProcess.reduce((acc, r) => acc + (parseInt(r.reps) || 0), 0) /
+          rowsToProcess.length
+      )
+    );
+    const detalleSeries = rowsToProcess
+      .map((r, idx) => `S${idx + 1}: ${parseFloat(r.weight) || 0}kg × ${parseInt(r.reps) || 0}`)
+      .join(' | ');
 
     setSubmittingProgress(true);
     try {
       const response = await apiFetch('/api/progress', {
         method: 'POST',
         body: JSON.stringify({
-          exerciseId: selectedExercise.id,
-          pesoUsado: parseFloat(pesoUsado) || 0,
-          repsRealizadas: parseInt(repsRealizadas) || 0,
-          setsRealizados: parseInt(setsRealizados) || 0,
+          exerciseId: selectedPlanItem.exercise.id,
+          pesoUsado: maxWeight,
+          repsRealizadas: avgReps,
+          setsRealizados: rowsToProcess.length,
+          detalleSeries,
           notas,
         }),
       });
 
       if (!response.ok) throw new Error('Error al registrar progreso');
 
-      toast.success(`¡Progreso registrado en ${selectedExercise.nombre}!`);
-      setSelectedExercise(null);
+      toast.success(
+        `¡${rowsToProcess.length} series registradas en ${selectedPlanItem.exercise.nombre}!`
+      );
+      setSelectedPlanItem(null);
       fetchPlansAndProgress();
     } catch (err) {
       toast.error('Error al guardar progreso: ' + (err.message || 'Intenta de nuevo'));
@@ -209,6 +375,8 @@ const ClientDashboard = () => {
       toast.error(msg);
     }
   };
+
+  const selectedExercise = selectedPlanItem?.exercise;
 
   return (
     <div className="client-dashboard-layout">
@@ -252,14 +420,47 @@ const ClientDashboard = () => {
                   Mi Plan de Entrenamiento
                 </h2>
                 <p className="client-subtitle">
-                  Toca cualquier ejercicio para registrar tus series y cargas del día.
+                  Selecciona tu sesión del día y registra cada serie con el temporizador de descanso.
                 </p>
               </div>
             </div>
 
             {!loading && plans.length > 0 && (
               <>
-                {/* Banner de Resumen de Entrenamiento de Hoy */}
+                {/* Selector de Días / Sesiones */}
+                {routineDays.length > 0 && (
+                  <div className="day-tabs-bar">
+                    {routineDays.map((d) => {
+                      const listForDay =
+                        d === 'Todos'
+                          ? plans
+                          : plans.filter((p) => (p.dia || 'Día 1') === d);
+                      const doneForDay = listForDay.filter(
+                        (p) => p.exercise && isLoggedToday(p.exercise.id)
+                      ).length;
+
+                      return (
+                        <button
+                          key={d}
+                          type="button"
+                          className={`day-tab-btn ${selectedDay === d ? 'active' : ''}`}
+                          onClick={() => {
+                            setSelectedDay(d);
+                            setSelectedMuscle('Todos');
+                          }}
+                        >
+                          <Calendar size={16} />
+                          <span>{d}</span>
+                          <span className="day-tab-count">
+                            {doneForDay}/{listForDay.length}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Banner de Resumen de la Sesión Actual */}
                 <div className="workout-summary-banner">
                   <div className="workout-summary-top">
                     <div className="workout-summary-info">
@@ -267,10 +468,13 @@ const ClientDashboard = () => {
                         <Flame size={22} />
                       </div>
                       <div className="workout-summary-text">
-                        <h3>Progreso de Hoy</h3>
+                        <h3>
+                          Progreso de Hoy{' '}
+                          {selectedDay !== 'Todos' ? `— ${selectedDay}` : ''}
+                        </h3>
                         <p>
-                          Has registrado <strong>{completedTodayCount}</strong> de{' '}
-                          <strong>{plans.length}</strong> ejercicios asignados
+                          Has completado <strong>{completedInDayCount}</strong> de{' '}
+                          <strong>{dayPlans.length}</strong> ejercicios en esta sesión
                         </p>
                       </div>
                     </div>
@@ -291,7 +495,7 @@ const ClientDashboard = () => {
                     <input
                       type="text"
                       className="search-input"
-                      placeholder="Buscar ejercicio en mi rutina..."
+                      placeholder="Buscar ejercicio en esta sesión..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -375,9 +579,16 @@ const ClientDashboard = () => {
                             </span>
                           )}
                         </div>
-                        <div className="exercise-muscle-tag">
-                          <Target size={13} />
-                          {ex.musculo}
+
+                        <div className="card-tags-row">
+                          <span className="exercise-day-tag">
+                            <Calendar size={12} style={{ color: 'var(--accent-color)' }} />
+                            {planItem.dia || 'Día 1'}
+                          </span>
+                          <span className="exercise-muscle-tag">
+                            <Target size={12} />
+                            {ex.musculo}
+                          </span>
                         </div>
 
                         {ex.descripcion && <p className="exercise-description">{ex.descripcion}</p>}
@@ -399,11 +610,20 @@ const ClientDashboard = () => {
                               </span>
                             </div>
                           )}
+                          <div className="stat-box">
+                            <span className="stat-box-label">Descanso</span>
+                            <span className="stat-box-value">
+                              {planItem.descansoSegundos || 90}s
+                            </span>
+                          </div>
                         </div>
 
                         {planItem.notasExtras && (
                           <div className="exercise-notes-pill">
-                            <MessageSquare size={14} style={{ flexShrink: 0, marginTop: '2px', color: 'var(--accent-color)' }} />
+                            <MessageSquare
+                              size={14}
+                              style={{ flexShrink: 0, marginTop: '2px', color: 'var(--accent-color)' }}
+                            />
                             <span>{planItem.notasExtras}</span>
                           </div>
                         )}
@@ -421,7 +641,7 @@ const ClientDashboard = () => {
                           )}
                           <div className="card-action-text">
                             <PlusCircle size={16} />
-                            {loggedToday ? 'Registrar otra serie / editar' : 'Registrar progreso'}
+                            {loggedToday ? 'Entrenar otra vez / Editar series' : 'Iniciar Series y Descanso'}
                           </div>
                         </div>
                       </div>
@@ -443,7 +663,7 @@ const ClientDashboard = () => {
                   Métricas de Progreso
                 </h2>
                 <p className="client-subtitle">
-                  Analiza la evolución de tus cargas y repeticiones a lo largo del tiempo.
+                  Analiza la evolución de tus cargas y el detalle serie por serie.
                 </p>
               </div>
             </div>
@@ -532,16 +752,58 @@ const ClientDashboard = () => {
         )}
       </main>
 
-      {/* Modal para Registro de Progreso */}
-      {selectedExercise && (
-        <div className="modal-overlay" onClick={() => setSelectedExercise(null)}>
+      {/* Barra Flotante de Descanso cuando el modal está cerrado */}
+      {!selectedPlanItem && restRemaining > 0 && (
+        <div className="floating-rest-bar">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <Timer size={20} style={{ color: 'var(--accent-color)' }} />
+            <div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                Descanso activo
+              </div>
+              <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--accent-color)' }}>
+                {formatSeconds(restRemaining)}
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '0.4rem' }}>
+            <button
+              type="button"
+              className="btn-timer-ctrl"
+              onClick={() => setRestRunning(!restRunning)}
+            >
+              {restRunning ? <Pause size={14} /> : <Play size={14} />}
+            </button>
+            <button
+              type="button"
+              className="btn-timer-ctrl"
+              onClick={() => {
+                setRestRunning(false);
+                setRestRemaining(0);
+              }}
+            >
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para Registro Serie por Serie + Temporizador de Descanso */}
+      {selectedPlanItem && selectedExercise && (
+        <div className="modal-overlay" onClick={() => setSelectedPlanItem(null)}>
           <div className="modal-content-small" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header-small">
-              <h3>
-                <Dumbbell size={20} />
-                {selectedExercise.nombre}
-              </h3>
-              <button className="btn-close" onClick={() => setSelectedExercise(null)}>
+              <div>
+                <h3>
+                  <Dumbbell size={20} />
+                  {selectedExercise.nombre}
+                </h3>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  {selectedPlanItem.dia || 'Día 1'} • Objetivo: {selectedPlanItem.sets} series ×{' '}
+                  {selectedPlanItem.reps} reps
+                </span>
+              </div>
+              <button className="btn-close" onClick={() => setSelectedPlanItem(null)}>
                 <X size={18} />
               </button>
             </div>
@@ -563,7 +825,7 @@ const ClientDashboard = () => {
               <button
                 type="button"
                 className="btn-view-video"
-                style={{ marginBottom: '1.15rem', width: '100%' }}
+                style={{ marginBottom: '1rem', width: '100%' }}
                 onClick={(e) =>
                   openVideoModal(e, selectedExercise.videoUrl, selectedExercise.nombre)
                 }
@@ -573,47 +835,171 @@ const ClientDashboard = () => {
               </button>
             )}
 
-            <form onSubmit={handleProgressSubmit}>
-              <div className="form-row-2">
-                <div className="progress-form-group">
-                  <label>Peso usado (kg)</label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    min="0"
-                    value={pesoUsado}
-                    onChange={(e) => setPesoUsado(e.target.value)}
-                    required
-                  />
+            {/* Widget de Temporizador de Descanso (Rest Timer) */}
+            <div className="rest-timer-card">
+              <div className="rest-timer-top">
+                <div>
+                  <div
+                    style={{
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      color: 'var(--text-secondary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                    }}
+                  >
+                    <Clock size={13} style={{ color: 'var(--accent-color)' }} />
+                    Temporizador de Descanso
+                  </div>
+                  <div className="rest-timer-clock">
+                    {restRemaining > 0 ? formatSeconds(restRemaining) : formatSeconds(restDuration)}
+                  </div>
                 </div>
-                <div className="progress-form-group">
-                  <label>Series completadas</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={setsRealizados}
-                    onChange={(e) => setSetsRealizados(e.target.value)}
-                    required
-                  />
+
+                <div className="rest-timer-controls">
+                  {restRemaining > 0 ? (
+                    <>
+                      <button
+                        type="button"
+                        className="btn-timer-ctrl"
+                        onClick={() => adjustRestTimer(-15)}
+                      >
+                        -15s
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-timer-ctrl"
+                        onClick={() => adjustRestTimer(15)}
+                      >
+                        +15s
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-timer-ctrl active-preset"
+                        onClick={() => setRestRunning(!restRunning)}
+                      >
+                        {restRunning ? <Pause size={14} /> : <Play size={14} />}
+                        {restRunning ? 'Pausar' : 'Reanudar'}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-timer-ctrl"
+                        onClick={() => {
+                          setRestRunning(false);
+                          setRestRemaining(0);
+                        }}
+                        title="Reiniciar"
+                      >
+                        <RotateCcw size={14} />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {[60, 90, 120, 180].map((sec) => (
+                        <button
+                          key={sec}
+                          type="button"
+                          className={`btn-timer-ctrl ${restDuration === sec ? 'active-preset' : ''}`}
+                          onClick={() => startRestTimer(sec)}
+                        >
+                          {sec}s
+                        </button>
+                      ))}
+                    </>
+                  )}
                 </div>
               </div>
 
-              <div className="progress-form-group">
-                <label>Repeticiones logradas</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={repsRealizadas}
-                  onChange={(e) => setRepsRealizadas(e.target.value)}
-                  required
-                />
+              {restRemaining > 0 && (
+                <div className="workout-progress-bar-bg" style={{ height: '6px' }}>
+                  <div
+                    className="workout-progress-bar-fill"
+                    style={{
+                      width: `${Math.min(100, Math.round((restRemaining / Math.max(1, restDuration)) * 100))}%`,
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
+            <form onSubmit={handleProgressSubmit}>
+              {/* Registro Serie por Serie */}
+              <div className="sets-tracker-box">
+                <div className="sets-tracker-header">
+                  <h4>
+                    <CheckCircle2 size={16} style={{ color: '#34d399' }} />
+                    Registro Serie por Serie
+                  </h4>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                    Toca ✓ al terminar cada serie
+                  </span>
+                </div>
+
+                <div className="set-row-labels">
+                  <span style={{ textAlign: 'center' }}>Serie</span>
+                  <span style={{ textAlign: 'center' }}>Peso (kg)</span>
+                  <span style={{ textAlign: 'center' }}>Reps</span>
+                  <span style={{ textAlign: 'center' }}>Listo</span>
+                  <span />
+                </div>
+
+                {setRows.map((row, index) => (
+                  <div
+                    key={index}
+                    className={`set-row-grid ${row.completed ? 'completed' : ''}`}
+                  >
+                    <span className="set-num-badge">#{index + 1}</span>
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      className="set-input"
+                      placeholder="0"
+                      value={row.weight}
+                      onChange={(e) => handleSetRowChange(index, 'weight', e.target.value)}
+                      required
+                    />
+                    <input
+                      type="number"
+                      min="1"
+                      className="set-input"
+                      placeholder="10"
+                      value={row.reps}
+                      onChange={(e) => handleSetRowChange(index, 'reps', e.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className={`btn-check-set ${row.completed ? 'checked' : ''}`}
+                      onClick={() => handleToggleSetCompleted(index)}
+                      title="Marcar serie como completada e iniciar descanso"
+                    >
+                      <Check size={17} />
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-remove-set"
+                      onClick={() => handleRemoveSetRow(index)}
+                      disabled={setRows.length <= 1}
+                      title="Quitar serie"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+
+                <button type="button" className="btn-add-set" onClick={handleAddSetRow}>
+                  <Plus size={15} /> Añadir otra serie
+                </button>
               </div>
 
               <div className="progress-form-group">
                 <label>Notas de la sesión (opcional)</label>
                 <textarea
-                  rows="3"
-                  placeholder="Ej: Costó la última repetición, buenas sensaciones"
+                  rows="2"
+                  placeholder="Ej: Subí 2.5kg en la última serie, buenas sensaciones"
                   value={notas}
                   onChange={(e) => setNotas(e.target.value)}
                 ></textarea>
@@ -625,7 +1011,7 @@ const ClientDashboard = () => {
                 disabled={submittingProgress}
               >
                 <CheckCircle2 size={18} />
-                {submittingProgress ? 'Guardando...' : 'Guardar Progreso'}
+                {submittingProgress ? 'Guardando...' : 'Finalizar y Guardar Ejercicio'}
               </button>
             </form>
           </div>

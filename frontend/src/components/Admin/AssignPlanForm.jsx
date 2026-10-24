@@ -5,32 +5,53 @@ import {
   X,
   Plus,
   Trash2,
+  Pencil,
   Calendar,
   Dumbbell,
   Search,
+  Clock,
+  Layers,
+  Save,
+  Copy,
 } from 'lucide-react';
 import { apiFetch } from '../../utils/api';
 import { useToast } from '../../context/ToastContext';
 import { colors } from '../../theme';
 
 const muscleGroups = ['Todos', 'Pecho', 'Espalda', 'Bíceps', 'Tríceps', 'Hombros', 'Abdomen', 'Piernas'];
+const dayPresets = ['Día 1', 'Día 2', 'Día 3', 'Día 4', 'Día 5', 'Día 6', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
 const AssignPlanForm = ({ client, onClose }) => {
   const { toast, confirm } = useToast();
   const [activeModalTab, setActiveModalTab] = useState('routine'); // 'routine' or 'progress'
   const [exercises, setExercises] = useState([]);
   const [clientPlans, setClientPlans] = useState([]);
+  const [templates, setTemplates] = useState([]);
 
   // Filter state for exercise selector
   const [filterMuscle, setFilterMuscle] = useState('Todos');
   const [searchExercise, setSearchExercise] = useState('');
 
-  // Form state
+  // Day filter in client's current routine
+  const [selectedRoutineDay, setSelectedRoutineDay] = useState('Todos');
+
+  // Form state (Create / Edit Plan Item)
+  const [editingPlanId, setEditingPlanId] = useState(null);
   const [exerciseId, setExerciseId] = useState('');
+  const [dia, setDia] = useState('Día 1');
   const [sets, setSets] = useState(3);
   const [reps, setReps] = useState(10);
   const [pesoSugerido, setPesoSugerido] = useState('');
+  const [descansoSegundos, setDescansoSegundos] = useState(90);
   const [notasExtras, setNotasExtras] = useState('');
+
+  // Quick Template Actions state
+  const [showApplyTemplateBox, setShowApplyTemplateBox] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
+  const [replaceRoutine, setReplaceRoutine] = useState(false);
+  const [showSaveAsTemplateBox, setShowSaveAsTemplateBox] = useState(false);
+  const [newTemplateName, setNewTemplateName] = useState('');
+  const [newTemplateDesc, setNewTemplateDesc] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,11 +72,21 @@ const AssignPlanForm = ({ client, onClose }) => {
   const fetchInitialData = async () => {
     setLoading(true);
     try {
-      const exRes = await apiFetch('/api/exercises');
-      const exData = await exRes.json();
-      setExercises(exData);
-      if (exData.length > 0) setExerciseId(exData[0].id.toString());
-      fetchClientPlan();
+      const [exRes, tplRes] = await Promise.all([
+        apiFetch('/api/exercises'),
+        apiFetch('/api/templates'),
+      ]);
+      if (exRes.ok) {
+        const exData = await exRes.json();
+        setExercises(exData);
+        if (exData.length > 0) setExerciseId(exData[0].id.toString());
+      }
+      if (tplRes.ok) {
+        const tplData = await tplRes.json();
+        setTemplates(tplData);
+        if (tplData.length > 0) setSelectedTemplateId(tplData[0].id.toString());
+      }
+      await fetchClientPlan();
     } catch {
       setError('Error al cargar los datos iniciales.');
       toast.error('Error al cargar los datos iniciales.');
@@ -74,25 +105,37 @@ const AssignPlanForm = ({ client, onClose }) => {
   }, [exercises, filterMuscle, searchExercise]);
 
   useEffect(() => {
-    if (filteredExercises.length > 0) {
+    if (!editingPlanId && filteredExercises.length > 0) {
       const exists = filteredExercises.some((ex) => ex.id.toString() === exerciseId);
       if (!exists) {
         setExerciseId(filteredExercises[0].id.toString());
       }
-    } else {
-      setExerciseId('');
     }
-  }, [filteredExercises]);
+  }, [filteredExercises, editingPlanId]);
 
   const fetchClientPlan = async () => {
     try {
       const planRes = await apiFetch(`/api/users/clients/${client.id}/plan`);
-      const planData = await planRes.json();
-      setClientPlans(planData);
+      if (planRes.ok) {
+        const planData = await planRes.json();
+        setClientPlans(planData);
+      }
     } catch (err) {
       console.error(err);
     }
   };
+
+  // Unique days in client's current routine
+  const routineDays = useMemo(() => {
+    const set = new Set();
+    clientPlans.forEach((p) => set.add(p.dia || 'Día 1'));
+    return ['Todos', ...Array.from(set)];
+  }, [clientPlans]);
+
+  const filteredClientPlans = useMemo(() => {
+    if (selectedRoutineDay === 'Todos') return clientPlans;
+    return clientPlans.filter((p) => (p.dia || 'Día 1') === selectedRoutineDay);
+  }, [clientPlans, selectedRoutineDay]);
 
   const fetchClientProgress = async () => {
     setProgressLoading(true);
@@ -202,29 +245,62 @@ const AssignPlanForm = ({ client, onClose }) => {
     };
   }, [activeModalTab, selectedProgressExId, clientProgress]);
 
+  const startEditingPlan = (plan) => {
+    setEditingPlanId(plan.id);
+    setFilterMuscle('Todos');
+    setSearchExercise('');
+    setExerciseId(plan.exercise ? plan.exercise.id.toString() : '');
+    setDia(plan.dia || 'Día 1');
+    setSets(plan.sets || 3);
+    setReps(plan.reps || 10);
+    setPesoSugerido(plan.pesoSugerido ? plan.pesoSugerido.toString() : '');
+    setDescansoSegundos(plan.descansoSegundos || 90);
+    setNotasExtras(plan.notasExtras || '');
+  };
+
+  const cancelEditingPlan = () => {
+    setEditingPlanId(null);
+    setSets(3);
+    setReps(10);
+    setPesoSugerido('');
+    setDescansoSegundos(90);
+    setNotasExtras('');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!exerciseId) return;
     setIsSubmitting(true);
     setError('');
 
+    const payload = {
+      clientId: client.id,
+      exerciseId: parseInt(exerciseId),
+      dia: dia.trim() || 'Día 1',
+      sets: parseInt(sets),
+      reps: parseInt(reps),
+      pesoSugerido: pesoSugerido ? parseFloat(pesoSugerido) : null,
+      descansoSegundos: parseInt(descansoSegundos) || 90,
+      notasExtras,
+    };
+
     try {
-      const response = await apiFetch('/api/training-plans', {
-        method: 'POST',
-        body: JSON.stringify({
-          clientId: client.id,
-          exerciseId: parseInt(exerciseId),
-          sets: parseInt(sets),
-          reps: parseInt(reps),
-          pesoSugerido: pesoSugerido ? parseFloat(pesoSugerido) : null,
-          notasExtras,
-        }),
+      const url = editingPlanId ? `/api/training-plans/${editingPlanId}` : '/api/training-plans';
+      const method = editingPlanId ? 'PUT' : 'POST';
+
+      const response = await apiFetch(url, {
+        method,
+        body: JSON.stringify(payload),
       });
 
-      if (!response.ok) throw new Error('Error al asignar el ejercicio.');
+      if (!response.ok) throw new Error('Error al guardar el ejercicio en la rutina.');
 
-      setNotasExtras('');
-      toast.success('Ejercicio agregado a la rutina del atleta');
+      toast.success(
+        editingPlanId
+          ? 'Ejercicio actualizado en la rutina'
+          : `Ejercicio asignado a ${dia || 'Día 1'}`
+      );
+      cancelEditingPlan();
       fetchClientPlan();
     } catch (err) {
       setError(err.message);
@@ -238,7 +314,7 @@ const AssignPlanForm = ({ client, onClose }) => {
     const exName = plan.exercise ? plan.exercise.nombre : 'este ejercicio';
     const ok = await confirm({
       title: '¿Quitar de la rutina?',
-      message: `Se quitará "${exName}" del plan de entrenamiento de ${client.nombre}.`,
+      message: `Se quitará "${exName}" (${plan.dia || 'Día 1'}) del plan de ${client.nombre}.`,
       confirmText: 'Quitar',
       cancelText: 'Cancelar',
       danger: true,
@@ -248,6 +324,7 @@ const AssignPlanForm = ({ client, onClose }) => {
     try {
       await apiFetch(`/api/training-plans/${plan.id}`, { method: 'DELETE' });
       toast.info(`"${exName}" removido de la rutina`);
+      if (editingPlanId === plan.id) cancelEditingPlan();
       fetchClientPlan();
     } catch {
       setError('Error al eliminar el ejercicio del plan.');
@@ -255,7 +332,48 @@ const AssignPlanForm = ({ client, onClose }) => {
     }
   };
 
-  // Build unique exercises with latest log for progress tab
+  const handleApplyTemplateToClient = async (e) => {
+    e.preventDefault();
+    if (!selectedTemplateId) return;
+    try {
+      const res = await apiFetch(`/api/templates/${selectedTemplateId}/apply`, {
+        method: 'POST',
+        body: JSON.stringify({
+          clientId: client.id,
+          replaceExisting: replaceRoutine,
+        }),
+      });
+      if (!res.ok) throw new Error('No se pudo aplicar la plantilla');
+      toast.success('¡Plantilla aplicada a la rutina del cliente!');
+      setShowApplyTemplateBox(false);
+      fetchClientPlan();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleSaveCurrentAsTemplate = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await apiFetch(`/api/templates/from-client/${client.id}`, {
+        method: 'POST',
+        body: JSON.stringify({
+          nombre: newTemplateName.trim() || `Rutina de ${client.nombre}`,
+          descripcion: newTemplateDesc.trim(),
+        }),
+      });
+      if (!res.ok) throw new Error('Error al guardar como plantilla');
+      toast.success('¡Rutina guardada en tus Plantillas!');
+      setShowSaveAsTemplateBox(false);
+      setNewTemplateName('');
+      setNewTemplateDesc('');
+      const tplRes = await apiFetch('/api/templates');
+      if (tplRes.ok) setTemplates(await tplRes.json());
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
   const getLatestProgressPerExercise = () => {
     const map = new Map();
     clientProgress.forEach((p) => {
@@ -315,32 +433,72 @@ const AssignPlanForm = ({ client, onClose }) => {
         {/* TAB 1: Routine Management */}
         {activeModalTab === 'routine' && (
           <div className="assign-layout">
-            {/* Columna Izquierda: Formulario de Asignación */}
+            {/* Columna Izquierda: Formulario de Asignación / Edición */}
             <div className="assign-form-col">
               <h3>
-                <Plus size={18} style={{ color: 'var(--accent-color)' }} />
-                Asignar Nuevo Ejercicio
+                {editingPlanId ? (
+                  <>
+                    <Pencil size={18} style={{ color: 'var(--accent-color)' }} />
+                    Editando Ejercicio de la Rutina
+                  </>
+                ) : (
+                  <>
+                    <Plus size={18} style={{ color: 'var(--accent-color)' }} />
+                    Asignar Ejercicio por Día
+                  </>
+                )}
               </h3>
               {loading ? (
                 <p style={{ color: 'var(--text-muted)' }}>Cargando ejercicios...</p>
               ) : (
                 <form onSubmit={handleSubmit} className="custom-form">
+                  {/* Selección rápida de Día / Sesión */}
                   <div className="form-group">
-                    <label>Filtrar por Músculo</label>
-                    <div className="muscle-chips" style={{ marginBottom: '0.6rem' }}>
+                    <label>Día / Sesión de Entrenamiento</label>
+                    <div className="muscle-chips" style={{ marginBottom: '0.5rem' }}>
+                      {['Día 1', 'Día 2', 'Día 3', 'Día 4', 'Día 5'].map((d) => (
+                        <button
+                          key={d}
+                          type="button"
+                          className={`muscle-chip ${dia === d ? 'active' : ''}`}
+                          onClick={() => setDia(d)}
+                          style={{ padding: '0.3rem 0.7rem', fontSize: '0.76rem' }}
+                        >
+                          {d}
+                        </button>
+                      ))}
+                    </div>
+                    <input
+                      type="text"
+                      list="assign-day-presets"
+                      value={dia}
+                      onChange={(e) => setDia(e.target.value)}
+                      placeholder="Ej: Día 1 - Pecho y Tríceps, Lunes..."
+                      required
+                    />
+                    <datalist id="assign-day-presets">
+                      {dayPresets.map((d) => (
+                        <option key={d} value={d} />
+                      ))}
+                    </datalist>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Filtrar Catálogo por Músculo</label>
+                    <div className="muscle-chips" style={{ marginBottom: '0.55rem' }}>
                       {muscleGroups.map((m) => (
                         <button
                           key={m}
                           type="button"
                           className={`muscle-chip ${filterMuscle === m ? 'active' : ''}`}
                           onClick={() => setFilterMuscle(m)}
-                          style={{ padding: '0.3rem 0.7rem', fontSize: '0.76rem' }}
+                          style={{ padding: '0.28rem 0.68rem', fontSize: '0.75rem' }}
                         >
                           {m}
                         </button>
                       ))}
                     </div>
-                    <div className="search-input-wrap" style={{ marginBottom: '0.65rem' }}>
+                    <div className="search-input-wrap" style={{ marginBottom: '0.6rem' }}>
                       <Search size={15} className="search-input-icon" />
                       <input
                         type="text"
@@ -348,7 +506,7 @@ const AssignPlanForm = ({ client, onClose }) => {
                         placeholder="Buscar ejercicio..."
                         value={searchExercise}
                         onChange={(e) => setSearchExercise(e.target.value)}
-                        style={{ padding: '0.55rem 2rem 0.55rem 2.3rem', fontSize: '0.86rem' }}
+                        style={{ padding: '0.52rem 2rem 0.52rem 2.3rem', fontSize: '0.85rem' }}
                       />
                       {searchExercise && (
                         <button
@@ -360,7 +518,7 @@ const AssignPlanForm = ({ client, onClose }) => {
                         </button>
                       )}
                     </div>
-                    <label>Seleccionar Ejercicio ({filteredExercises.length})</label>
+                    <label>Ejercicio ({filteredExercises.length})</label>
                     <select
                       value={exerciseId}
                       onChange={(e) => setExerciseId(e.target.value)}
@@ -379,7 +537,7 @@ const AssignPlanForm = ({ client, onClose }) => {
 
                   <div className="form-row">
                     <div className="form-group">
-                      <label>Sets</label>
+                      <label>Series</label>
                       <input
                         type="number"
                         min="1"
@@ -389,7 +547,7 @@ const AssignPlanForm = ({ client, onClose }) => {
                       />
                     </div>
                     <div className="form-group">
-                      <label>Repeticiones</label>
+                      <label>Reps</label>
                       <input
                         type="number"
                         min="1"
@@ -399,7 +557,7 @@ const AssignPlanForm = ({ client, onClose }) => {
                       />
                     </div>
                     <div className="form-group">
-                      <label>Peso Sugerido (kg)</label>
+                      <label>Peso Sug. (kg)</label>
                       <input
                         type="number"
                         step="0.5"
@@ -410,35 +568,257 @@ const AssignPlanForm = ({ client, onClose }) => {
                     </div>
                   </div>
 
-                  <div className="form-group">
-                    <label>Notas / Indicaciones (opcional)</label>
-                    <input
-                      type="text"
-                      value={notasExtras}
-                      onChange={(e) => setNotasExtras(e.target.value)}
-                      placeholder="Ej: Tempo controlado 3-1-1, cuidar técnica"
-                    />
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Descanso entre series</label>
+                      <select
+                        value={descansoSegundos}
+                        onChange={(e) => setDescansoSegundos(Number(e.target.value))}
+                      >
+                        <option value={45}>45 segundos</option>
+                        <option value={60}>60 segundos (1 min)</option>
+                        <option value={90}>90 segundos (1m 30s)</option>
+                        <option value={120}>120 segundos (2 min)</option>
+                        <option value={180}>180 segundos (3 min)</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Notas (opcional)</label>
+                      <input
+                        type="text"
+                        value={notasExtras}
+                        onChange={(e) => setNotasExtras(e.target.value)}
+                        placeholder="Ej: Controlar bajada"
+                      />
+                    </div>
                   </div>
 
-                  <button
-                    type="submit"
-                    className="btn-primary"
-                    style={{ width: '100%' }}
-                    disabled={isSubmitting || filteredExercises.length === 0}
-                  >
-                    <Plus size={18} />
-                    {isSubmitting ? 'Asignando...' : 'Asignar a la Rutina'}
-                  </button>
+                  <div style={{ display: 'flex', gap: '0.65rem' }}>
+                    <button
+                      type="submit"
+                      className="btn-primary"
+                      style={{ flex: 1 }}
+                      disabled={isSubmitting || filteredExercises.length === 0}
+                    >
+                      {editingPlanId ? <Save size={17} /> : <Plus size={18} />}
+                      {isSubmitting
+                        ? 'Guardando...'
+                        : editingPlanId
+                          ? 'Guardar Cambios'
+                          : `Asignar a ${dia || 'Día 1'}`}
+                    </button>
+                    {editingPlanId && (
+                      <button
+                        type="button"
+                        className="btn-secondary-ghost"
+                        onClick={cancelEditingPlan}
+                      >
+                        Cancelar
+                      </button>
+                    )}
+                  </div>
                 </form>
               )}
             </div>
 
-            {/* Columna Derecha: Plan Actual del Cliente */}
+            {/* Columna Derecha: Plan Actual del Cliente por Días + Plantillas */}
             <div className="current-plan-col">
-              <h3>
-                <Dumbbell size={18} style={{ color: 'var(--accent-color)' }} />
-                Rutina Actual ({clientPlans.length} ejercicios)
-              </h3>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '0.5rem',
+                  marginBottom: '0.85rem',
+                }}
+              >
+                <h3 style={{ margin: 0 }}>
+                  <Dumbbell size={18} style={{ color: 'var(--accent-color)' }} />
+                  Rutina Actual ({clientPlans.length})
+                </h3>
+                <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="btn-edit"
+                    style={{ fontSize: '0.78rem', padding: '0.38rem 0.7rem' }}
+                    onClick={() => {
+                      setShowApplyTemplateBox(!showApplyTemplateBox);
+                      setShowSaveAsTemplateBox(false);
+                    }}
+                  >
+                    <Copy size={13} /> Aplicar Plantilla
+                  </button>
+                  {clientPlans.length > 0 && (
+                    <button
+                      type="button"
+                      className="btn-edit"
+                      style={{ fontSize: '0.78rem', padding: '0.38rem 0.7rem' }}
+                      onClick={() => {
+                        setShowSaveAsTemplateBox(!showSaveAsTemplateBox);
+                        setShowApplyTemplateBox(false);
+                      }}
+                    >
+                      <Layers size={13} /> Guardar Plantilla
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Caja desplegable: Aplicar Plantilla */}
+              {showApplyTemplateBox && (
+                <form
+                  onSubmit={handleApplyTemplateToClient}
+                  style={{
+                    background: 'rgba(250, 204, 21, 0.08)',
+                    border: '1px solid var(--accent-border)',
+                    borderRadius: '12px',
+                    padding: '0.9rem',
+                    marginBottom: '1rem',
+                  }}
+                >
+                  <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--accent-color)' }}>
+                    Cargar una Plantilla en {client.nombre}
+                  </div>
+                  {templates.length === 0 ? (
+                    <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                      No tienes plantillas creadas aún.
+                    </p>
+                  ) : (
+                    <>
+                      <select
+                        value={selectedTemplateId}
+                        onChange={(e) => setSelectedTemplateId(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '0.55rem',
+                          borderRadius: '8px',
+                          background: 'rgba(0,0,0,0.45)',
+                          color: 'white',
+                          border: '1px solid var(--card-border-strong)',
+                          marginBottom: '0.55rem',
+                        }}
+                      >
+                        {templates.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.nombre} ({(t.items || []).length} ejercicios)
+                          </option>
+                        ))}
+                      </select>
+                      <label
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.45rem',
+                          fontSize: '0.8rem',
+                          color: 'var(--text-secondary)',
+                          marginBottom: '0.65rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={replaceRoutine}
+                          onChange={(e) => setReplaceRoutine(e.target.checked)}
+                        />
+                        Reemplazar rutina actual del cliente
+                      </label>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button type="submit" className="btn-primary" style={{ padding: '0.45rem 0.9rem', fontSize: '0.82rem' }}>
+                          Cargar Rutina
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-secondary-ghost"
+                          style={{ padding: '0.45rem 0.8rem', fontSize: '0.82rem' }}
+                          onClick={() => setShowApplyTemplateBox(false)}
+                        >
+                          Cerrar
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </form>
+              )}
+
+              {/* Caja desplegable: Guardar Rutina del Cliente como Plantilla */}
+              {showSaveAsTemplateBox && (
+                <form
+                  onSubmit={handleSaveCurrentAsTemplate}
+                  style={{
+                    background: 'rgba(16, 185, 129, 0.08)',
+                    border: '1px solid rgba(16, 185, 129, 0.35)',
+                    borderRadius: '12px',
+                    padding: '0.9rem',
+                    marginBottom: '1rem',
+                  }}
+                >
+                  <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem', color: '#34d399' }}>
+                    Guardar esta rutina como Plantilla reutilizable
+                  </div>
+                  <input
+                    type="text"
+                    placeholder={`Ej: Rutina de ${client.nombre}`}
+                    value={newTemplateName}
+                    onChange={(e) => setNewTemplateName(e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '0.55rem 0.75rem',
+                      borderRadius: '8px',
+                      background: 'rgba(0,0,0,0.45)',
+                      color: 'white',
+                      border: '1px solid var(--card-border-strong)',
+                      marginBottom: '0.5rem',
+                    }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Descripción corta (opcional)"
+                    value={newTemplateDesc}
+                    onChange={(e) => setNewTemplateDesc(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '0.55rem 0.75rem',
+                      borderRadius: '8px',
+                      background: 'rgba(0,0,0,0.45)',
+                      color: 'white',
+                      border: '1px solid var(--card-border-strong)',
+                      marginBottom: '0.65rem',
+                    }}
+                  />
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button type="submit" className="btn-primary" style={{ padding: '0.45rem 0.9rem', fontSize: '0.82rem' }}>
+                      Guardar Plantilla
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-secondary-ghost"
+                      style={{ padding: '0.45rem 0.8rem', fontSize: '0.82rem' }}
+                      onClick={() => setShowSaveAsTemplateBox(false)}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Pestañas de Días dentro de la rutina del cliente */}
+              {routineDays.length > 1 && (
+                <div className="muscle-chips" style={{ marginBottom: '0.9rem' }}>
+                  {routineDays.map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      className={`muscle-chip ${selectedRoutineDay === d ? 'active' : ''}`}
+                      onClick={() => setSelectedRoutineDay(d)}
+                    >
+                      {d}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               <div className="plan-list">
                 {clientPlans.length === 0 ? (
                   <div className="empty-state">
@@ -446,15 +826,35 @@ const AssignPlanForm = ({ client, onClose }) => {
                     <p>El cliente aún no tiene ejercicios asignados.</p>
                   </div>
                 ) : (
-                  clientPlans.map((plan) => (
-                    <div key={plan.id} className="plan-item">
+                  filteredClientPlans.map((plan) => (
+                    <div
+                      key={plan.id}
+                      className="plan-item"
+                      style={
+                        editingPlanId === plan.id
+                          ? { borderColor: 'var(--accent-color)', background: 'var(--accent-subtle)' }
+                          : undefined
+                      }
+                    >
                       <div className="plan-details">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+                          <span
+                            style={{
+                              fontSize: '0.7rem',
+                              fontWeight: 700,
+                              padding: '0.12rem 0.5rem',
+                              borderRadius: '6px',
+                              background: 'rgba(255,255,255,0.08)',
+                              color: 'var(--accent-light)',
+                            }}
+                          >
+                            {plan.dia || 'Día 1'}
+                          </span>
                           <strong>
                             {plan.exercise ? plan.exercise.nombre : `Ejercicio ID: ${plan.exerciseId}`}
                           </strong>
                           {plan.exercise?.musculo && (
-                            <span className="badge" style={{ fontSize: '0.7rem', padding: '0.12rem 0.5rem' }}>
+                            <span className="badge" style={{ fontSize: '0.68rem', padding: '0.1rem 0.45rem' }}>
                               {plan.exercise.musculo}
                             </span>
                           )}
@@ -463,17 +863,33 @@ const AssignPlanForm = ({ client, onClose }) => {
                           <span>
                             {plan.sets} series × {plan.reps} reps
                           </span>
-                          {plan.pesoSugerido && <span>• Sugerido: {plan.pesoSugerido} kg</span>}
+                          {plan.pesoSugerido && <span>• {plan.pesoSugerido} kg</span>}
+                          <span>
+                            • <Clock size={12} style={{ verticalAlign: 'middle' }} />{' '}
+                            {plan.descansoSegundos || 90}s
+                          </span>
                         </div>
                         {plan.notasExtras && <div className="plan-notes">"{plan.notasExtras}"</div>}
                       </div>
-                      <button
-                        className="btn-danger-small"
-                        onClick={() => handleDeletePlan(plan)}
-                        title="Quitar ejercicio"
-                      >
-                        <Trash2 size={15} />
-                      </button>
+                      <div style={{ display: 'flex', gap: '0.35rem', flexShrink: 0 }}>
+                        <button
+                          type="button"
+                          className="btn-edit"
+                          style={{ padding: '0.35rem 0.5rem' }}
+                          onClick={() => startEditingPlan(plan)}
+                          title="Editar series, peso o día"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-danger-small"
+                          onClick={() => handleDeletePlan(plan)}
+                          title="Quitar ejercicio"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
                     </div>
                   ))
                 )}
@@ -578,9 +994,9 @@ const AssignPlanForm = ({ client, onClose }) => {
                         <thead>
                           <tr style={{ background: 'rgba(255,255,255,0.06)', color: colors.accent }}>
                             <th style={{ padding: '0.7rem', textAlign: 'left' }}>Fecha</th>
-                            <th style={{ padding: '0.7rem', textAlign: 'left' }}>Peso (kg)</th>
-                            <th style={{ padding: '0.7rem', textAlign: 'left' }}>Series</th>
-                            <th style={{ padding: '0.7rem', textAlign: 'left' }}>Reps</th>
+                            <th style={{ padding: '0.7rem', textAlign: 'left' }}>Peso Máx</th>
+                            <th style={{ padding: '0.7rem', textAlign: 'left' }}>Series × Reps</th>
+                            <th style={{ padding: '0.7rem', textAlign: 'left' }}>Detalle Serie por Serie</th>
                             <th style={{ padding: '0.7rem', textAlign: 'left' }}>Notas</th>
                           </tr>
                         </thead>
@@ -599,8 +1015,12 @@ const AssignPlanForm = ({ client, onClose }) => {
                               <td style={{ padding: '0.7rem' }}>
                                 <strong>{item.pesoUsado} kg</strong>
                               </td>
-                              <td style={{ padding: '0.7rem' }}>{item.setsRealizados}</td>
-                              <td style={{ padding: '0.7rem' }}>{item.repsRealizadas}</td>
+                              <td style={{ padding: '0.7rem' }}>
+                                {item.setsRealizados} × {item.repsRealizadas}
+                              </td>
+                              <td style={{ padding: '0.7rem', color: 'var(--accent-light)', fontSize: '0.82rem' }}>
+                                {item.detalleSeries || '—'}
+                              </td>
                               <td style={{ padding: '0.7rem' }}>{item.notas || '—'}</td>
                             </tr>
                           ))}
